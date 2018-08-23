@@ -6,8 +6,10 @@
 var queryString = require('querystring');
 var Tokens = require('csrf');
 var csrf = new Tokens();
+var atob = require('atob');
 var popsicle = require('popsicle');
 var EventEmitter = require("events").EventEmitter;
+var oauthSignature = require('oauth-signature');
 var Token = require("./access-token/Token");
 var AuthResponse = require("./response/AuthResponse");
 
@@ -28,9 +30,12 @@ function OAuth2Client(config) {
     this.redirectUri = config.redirectUri;
     this.token = new Token(config);
 
+
     EventEmitter.call(this);
 
     this.events = {
+        migrateSuccess: 'migrateSuccess',
+        beforeMigrate: 'beforeMigrate',
         beforeUserInfo: 'beforeUserInfo',
         userInfoSuccess: 'userInfoSuccess',
         beforeLogin: 'beforeLogin',
@@ -52,10 +57,10 @@ OAuth2Client.authorizeEndpoint = 'https://appcenter.intuit.com/connect/oauth2';
 OAuth2Client.tokenEndpoint = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
 OAuth2Client.revokeEndpoint = 'https://developer.api.intuit.com/v2/oauth2/tokens/revoke';
 OAuth2Client.userinfo_endpoint = 'https://accounts.platform.intuit.com/v1/openid_connect/userinfo';
-OAuth2Client.environment = {
-    sandbox:'https://sandbox-quickbooks.api.intuit.com',
-    production:'https://quickbooks.api.intuit.com'
-}
+OAuth2Client.migrate_sandbox = 'https://developer-sandbox.api.intuit.com/v2/oauth2/tokens/migrate';
+OAuth2Client.migrate_production = 'https://developer.api.intuit.com/v2/oauth2/tokens/migrate';
+OAuth2Client.environment = {sandbox:'https://sandbox-quickbooks.api.intuit.com', production:'https://quickbooks.api.intuit.com'};
+OAuth2Client.jwks_uri = 'https://oauth.platform.intuit.com/op/v1/jwks';
 OAuth2Client.scopes = {
     Accounting: 'com.intuit.quickbooks.accounting',
     Payment: 'com.intuit.quickbooks.payment',
@@ -65,6 +70,7 @@ OAuth2Client.scopes = {
     Address: 'address',
     OpenId: 'openid'
 }
+OAuth2Client.user_agent = 'Intuit-OAuthClient-JS';
 
 /**
  * Event Emitter
@@ -132,7 +138,8 @@ OAuth2Client.prototype.createToken = function(params) {
             headers: {
                 'Authorization': 'Basic ' + this.authHeader(),
                 'Content-Type': AuthResponse._urlencodedContentType,
-                'Accept': AuthResponse._jsonContentType
+                'Accept': AuthResponse._jsonContentType,
+                'User-Agent': OAuth2Client.user_agent
             }
         };
 
@@ -160,11 +167,15 @@ OAuth2Client.prototype.createToken = function(params) {
  * @param {Object} params.refresh_token (optional)
  * @returns {Promise<AuthResponse>}
  */
-OAuth2Client.prototype.refresh = function(params) {
+OAuth2Client.prototype.refresh = function() {
 
     return (new Promise(function(resolve) {
 
+        if(!this.token.refreshToken()) throw new Error('The Refresh token is missing');
+        if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
+
         params = params || {};
+
         this.emit(this.events.beforeRefresh);
 
         var body = {};
@@ -179,7 +190,8 @@ OAuth2Client.prototype.refresh = function(params) {
             headers: {
                 'Authorization': 'Basic ' + this.authHeader(),
                 'Content-Type': AuthResponse._urlencodedContentType,
-                'Accept': AuthResponse._jsonContentType
+                'Accept': AuthResponse._jsonContentType,
+                'User-Agent': OAuth2Client.user_agent
             }
         };
 
@@ -195,7 +207,7 @@ OAuth2Client.prototype.refresh = function(params) {
 
     }.bind(this)).catch(function(e) {
 
-        this.emit(this.events.refreshError, e);
+        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -214,6 +226,12 @@ OAuth2Client.prototype.revoke = function(params) {
 
         params = params || {};
 
+        /**
+         * Check if the tokens exist and are valid
+         */
+        if(!this.token.refresh_token()) throw new Error('The Refresh token is missing');
+        if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
+
         this.emit(this.events.beforeLogout);
 
         var body = {};
@@ -227,7 +245,8 @@ OAuth2Client.prototype.revoke = function(params) {
             headers: {
                 'Authorization': 'Basic ' + this.authHeader(),
                 'Accept': AuthResponse._jsonContentType,
-                'Content-Type': AuthResponse._jsonContentType
+                'Content-Type': AuthResponse._jsonContentType,
+                'User-Agent': OAuth2Client.user_agent
             }
         };
 
@@ -265,7 +284,8 @@ OAuth2Client.prototype.getUserInfo = function(params) {
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + this.token.access_token,
-                'Accept': AuthResponse._jsonContentType
+                'Accept': AuthResponse._jsonContentType,
+                'User-Agent': OAuth2Client.user_agent
             }
         };
 
@@ -284,6 +304,197 @@ OAuth2Client.prototype.getUserInfo = function(params) {
 
     }.bind(this));
 
+};
+
+OAuth2Client.prototype.migrate = function(params) {
+
+    return (new Promise(function(resolve) {
+
+        params = params || {};
+
+        this.emit(this.events.beforeMigrate);
+
+        var url = this.environment.toLowerCase() == 'sandbox' ? OAuth2Client.migrate_sandbox : OAuth2Client.migrate_production;
+
+        var authHeader = this.generateOauth1Sign(objectAssign({}, {method: 'POST', url: url}, params));
+
+
+        var body = {
+            'scope':(Array.isArray(params.scope)) ? params.scope.join(' ') : params.scope,
+            'redirect_uri':this.redirect_uri,
+            'client_id': this.clientId,
+            'client_secret': this.clientSecret
+        };
+
+        var request = {
+            url: url,
+            method: 'POST',
+            body: body,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'OAuth ' + authHeader,
+                'Accept': AuthResponse._jsonContentType,
+                'User-Agent': OAuth2Client.user_agent
+            }
+        };
+
+
+
+        resolve(this.getTokenRequest(request));
+
+    }.bind(this))).then(function(res) {
+
+        var authResponse = res.json ? res : null;
+        var json = authResponse && authResponse.getJson() || res;
+        this.token.setToken(json);
+        this.emit(this.events.migrateSuccess, authResponse);
+        return authResponse;
+    }.bind(this)).catch(function(e) {
+
+        this.emit(this.events.logoutError, e);
+        throw e;
+
+    }.bind(this));
+
+
+};
+
+
+OAuth2Client.prototype.generateOauth1Sign = function(params) {
+
+
+    var timestamp = Math.round(new Date().getTime()/1000);
+
+    var parameters = {
+        oauth_consumer_key : params.consumer_key,
+        oauth_token : params.access_token,
+        oauth_signature_method : 'HMAC-SHA1',
+        oauth_timestamp : timestamp,
+        oauth_nonce : 'nonce',
+        oauth_version : '1.0'
+    };
+
+    var encodedSignature = oauthSignature.generate (params.method, params.uri, parameters, params.consumer_secret, params.access_secret);
+    parameters ['oauth_signature'] = encodedSignature;
+    var keys = Object.keys(parameters);
+    var authHeader = '';
+    for (key in parameters) {
+        // Add this for Accounting API minorversion url query parameter
+        if (key === 'minorversion') {
+            continue;
+        }
+        if (key === keys[keys.length-1]) {
+            authHeader += key + '=' + '"'+parameters[key]+'"';
+        }
+        else {
+            authHeader += key + '=' + '"'+parameters[key]+'",';
+        }
+    }
+    return authHeader;
+
+};
+
+OAuth2Client.prototype.validateIdToken = function(params) {
+
+    return (new Promise(function(resolve) {
+
+        if(!this.getToken().id_token) throw new Error('The bearer token does not have id_token');
+
+        var id_token = this.getToken().id_token || params.id_token;
+
+        params = params || {};
+
+
+        // Decode ID Token
+        var token_parts = id_token.split('.')
+        var id_token_header = JSON.parse(atob(token_parts[0]))
+        var id_token_payload = JSON.parse(atob(token_parts[1]))
+        var id_token_signature = atob(token_parts[2])
+
+
+        // Step 1 : First check if the issuer is as mentioned in "issuer"
+        if(id_token_payload.iss != 'https://oauth.platform.intuit.com/op/v1') {
+
+            console.log("Step 1 fail");
+            return false;
+        }
+
+        // Step 2 : check if the aud field in idToken is same as application's clientId
+        if(id_token_payload.aud != this.clientId) {
+            console.log("Step 2 fail");
+            return false;
+        }
+
+        // Step 3 : ensure the timestamp has not elapsed
+        if(id_token_payload.exp < Date.now() / 1000) {
+            console.log("Step 3 fail");
+            return false;
+        }
+
+        var request = {
+            url: OAuth2Client.jwks_uri,
+            method: 'GET',
+            headers: {
+                'Accept': AuthResponse._jsonContentType,
+                'User-Agent': OAuth2Client.user_agent
+            }
+        };
+
+        resolve(this.getKeyFromJWKsURI(id_token, id_token_header.kid, request));
+
+    }.bind(this))).then(function(res) {
+
+        return res;
+
+    }.bind(this)).catch(function(e) {
+
+        this.emit(this.events.logoutError, e);
+        throw e;
+
+    }.bind(this));
+}
+
+OAuth2Client.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
+
+    console.log("Step getKeyFromJWKsURI pass");
+
+    return (new Promise(function(resolve) {
+
+        resolve(this.loadResponsegFromJWKsURI(request));
+
+    }.bind(this))).then(function(response) {
+
+        console.log('The response  are :'+ JSON.stringify(response));
+        if(response.status != "200") {
+            console.log('The true   are :');
+            throw new Error('Invalid response from JWKsURI');
+        }
+
+        var key = JSON.parse(response.body).keys[0];
+
+        console.log('The keys are :' + JSON.stringify(JSON.parse(response.body)));
+        //
+        var cert = this.getPublicKey(key['n'], key['e'])
+        // Validate the RSA encryption
+        return require("jsonwebtoken").verify(id_token, cert);
+
+    }.bind(this)).catch(function(e) {
+
+
+        e = this.createError(e);
+        this.emit(this.events.requestError, e);
+        throw e;
+
+    }.bind(this));
+
+}
+
+
+OAuth2Client.prototype.getPublicKey = function(modulus, exponent) {
+    console.log("Step getPublicKey pass");
+    var getPem = require('rsa-pem-from-mod-exp');
+    var pem = getPem(modulus, exponent);
+    return pem
 };
 
 /**
@@ -330,6 +541,15 @@ OAuth2Client.prototype.loadResponse = function (request) {
     });
 };
 
+OAuth2Client.prototype.loadResponsegFromJWKsURI = function (request) {
+
+    console.log("Step loadResponsegFromJWKsURI pass");
+    return popsicle.get(request).then(function (response) {
+        console.log("response on popsicle"+JSON.stringify(response));
+        return response;
+    });
+};
+
 /**
  * Wrap the exception with more information
  * @param {Error|IApiError} e
@@ -338,7 +558,14 @@ OAuth2Client.prototype.loadResponse = function (request) {
  */
 OAuth2Client.prototype.createError = function(e, authResponse) {
 
-    e.authResponse = authResponse;
+    if(!authResponse){
+
+        e.error = e.originalMessage;
+        e.error = e.originalMessage;
+        return e;
+    }
+
+    e.authResponse = authResponse ? authResponse : null;
     e.originalMessage = e.message;
     e.error =  ('error' in authResponse.getJson() ? authResponse.getJson().error : '');
     e.error_description = ('error_description' in authResponse.getJson() ? authResponse.getJson().error_description : '');

@@ -20,6 +20,7 @@ function Token(params) {
     this.refresh_token = params.refresh_token || '';
     this.expires_in = params.expires_in || 0;
     this.x_refresh_token_expires_in = params.x_refresh_token_expires_in || 0;
+    this.id_token = params.id_token || '';
     this.latency = params.latency || 60 * 1000;
 }
 
@@ -76,6 +77,7 @@ Token.prototype.setToken = function(tokenData) {
     this.token_type = tokenData.token_type ;
     this.expires_in = Date.now() + (tokenData.expires_in * 1000);
     this.x_refresh_token_expires_in = Date.now() + (tokenData.x_refresh_token_expires_in * 1000);
+    this.id_token = tokenData.id_token || '';
     return this;
 
 };
@@ -95,9 +97,9 @@ Token.prototype.isAccessTokenValid = function() {
  * Check if there is a valid (not expired) access token
  * @return {boolean}
  */
-Token.prototype.isRefreshTokenValid = function() {
+Token.prototype.isRefreshTokenValid = function(params) {
 
-    return (this.x_refresh_token_expires_in > Date.now());
+    return ((this.params.refresh_token ? params.refresh_token : this.getToken().refresh_token) > Date.now());
 
 };
 
