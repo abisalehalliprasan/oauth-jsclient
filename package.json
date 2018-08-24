@@ -1,0 +1,57 @@
+{
+  "name": "oauth-jsclient",
+  "version": "0.0.1",
+  "description": "Node.js client for OAuth2.0",
+  "main": "src/OAuth2CLient.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=4.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/abisalehalliprasan/oauth-jsclient.git"
+  },
+  "author": "AKBP",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/abisalehalliprasan/oauth-jsclient/issues"
+  },
+  "homepage": "https://github.com/abisalehalliprasan/oauth-jsclient",
+  "devDependencies": {
+    "body-parser": "^1.15.2",
+    "browserify": "^16.1.1",
+    "csrf": "^3.0.4",
+    "chai": "^4.1.2",
+    "cors": "^2.8.1",
+    "envify": "^4.0.0",
+    "express": "^4.14.0",
+    "is-travis": "^1.0.0",
+    "karma": "^2.0.2",
+    "karma-browserify": "^5.0.2",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^2.0.0",
+    "karma-cli": "^1.0.1",
+    "karma-coverage": "^1.1.2",
+    "karma-firefox-launcher": "^1.0.0",
+    "karma-mocha": "^1.1.1",
+    "karma-phantomjs-launcher": "^1.0.0",
+    "mocha": "^5.0.4",
+    "object-assign": "^4.1.1",
+    "phantomjs-prebuilt": "^2.1.4",
+    "standard": "^11.0.0",
+    "watchify": "^3.7.0"
+  },
+  "dependencies": {
+    "events": "^3.0.0",
+    "wreck": "^14.0.2",
+    "popsicle": "^9.1.0",
+    "query-string": "^5.0.1",
+    "es6-promise": "^4.0.5",
+    "jsonwebtoken": "^7.1.9",
+    "rsa-pem-from-mod-exp": "^0.8.4",
+    "atob": "^2.0.3",
+    "oauth-signature": "^1.3.1"
+  }
+}
