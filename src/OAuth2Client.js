@@ -306,6 +306,50 @@ OAuth2Client.prototype.getUserInfo = function(params) {
 
 };
 
+OAuth2Client.prototype.makeApiCall = function(paramas)  {
+
+    return (new Promise(function(resolve) {
+
+        params = params || {};
+
+        this.emit(this.events.beforeAPICall);
+
+        var url = this.environment.toLowerCase() == 'sandbox' ? OAuth2Client.migrate_sandbox : OAuth2Client.migrate_production;
+
+        url += 'v3/company/'+ this.getToken().realmId +'/companyinfo/'+ this.getToken().realmId +'?minorversion=24';
+
+        var request = {
+            url: url,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + this.token.access_token,
+                'Accept': AuthResponse._jsonContentType,
+                'User-Agent': OAuth2Client.user_agent
+            }
+        };
+
+        resolve (this.getTokenRequest(request));
+
+
+
+    }.bind(this))).then(function(response) {
+
+        var authResponse = response.json ? response : null;
+        var json = authResponse && authResponse.getJson() || res;
+        this.token.setToken(json);
+        this.emit(this.events.refreshSuccess, authResponse);
+        return authResponse;
+
+    }.bind(this)).catch(function(e) {
+
+        e = this.createError(e);
+        throw e;
+
+    }.bind(this));
+
+};
+
+
 OAuth2Client.prototype.migrate = function(params) {
 
     return (new Promise(function(resolve) {
