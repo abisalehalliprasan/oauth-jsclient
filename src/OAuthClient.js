@@ -305,6 +305,11 @@ OAuthClient.prototype.getUserInfo = function(params) {
 
 };
 
+/**
+ * Make API call : Get CompanyInfo API Call
+ * @param params
+ * @returns {Promise<any>}
+ */
 OAuthClient.prototype.makeApiCall = function(params)  {
 
     return (new Promise(function(resolve) {
@@ -343,7 +348,11 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
 };
 
-
+/**
+ * Migrate OAuth1.0 apps to support OAuth2.0
+ * @param params
+ * @returns {Promise<any>}
+ */
 OAuthClient.prototype.migrate = function(params) {
 
     return (new Promise(function(resolve) {
@@ -376,8 +385,6 @@ OAuthClient.prototype.migrate = function(params) {
             }
         };
 
-
-
         resolve(this.getTokenRequest(request));
 
     }.bind(this))).then(function(res) {
@@ -397,7 +404,11 @@ OAuthClient.prototype.migrate = function(params) {
 
 };
 
-
+/**
+ * Generate oAuth1 Sign : Helper Method to Migrate OAuth1.0 apps to OAuth2.0
+ * @param params
+ * @returns {string}
+ */
 OAuthClient.prototype.generateOauth1Sign = function(params) {
 
 
@@ -416,7 +427,9 @@ OAuthClient.prototype.generateOauth1Sign = function(params) {
     parameters ['oauth_signature'] = encodedSignature;
     var keys = Object.keys(parameters);
     var authHeader = '';
+
     for (key in parameters) {
+
         // Add this for Accounting API minorversion url query parameter
         if (key === 'minorversion') {
             continue;
@@ -432,6 +445,11 @@ OAuthClient.prototype.generateOauth1Sign = function(params) {
 
 };
 
+/**
+ * Validate id_token
+ * @param params
+ * @returns {Promise<AuthResponse>}
+ */
 OAuthClient.prototype.validateIdToken = function(params) {
 
     return (new Promise(function(resolve) {
@@ -442,32 +460,22 @@ OAuthClient.prototype.validateIdToken = function(params) {
 
         params = params || {};
 
-
         // Decode ID Token
         var token_parts = id_token.split('.')
-        var id_token_header = JSON.parse(atob(token_parts[0]))
-        var id_token_payload = JSON.parse(atob(token_parts[1]))
-        var id_token_signature = atob(token_parts[2])
+        var id_token_header = JSON.parse(atob(token_parts[0]));
+        var id_token_payload = JSON.parse(atob(token_parts[1]));
+        var id_token_signature = atob(token_parts[2]);
 
 
         // Step 1 : First check if the issuer is as mentioned in "issuer"
-        if(id_token_payload.iss != 'https://oauth.platform.intuit.com/op/v1') {
-
-            console.log("Step 1 fail");
-            return false;
-        }
+        if(id_token_payload.iss != 'https://oauth.platform.intuit.com/op/v1') return false;
 
         // Step 2 : check if the aud field in idToken is same as application's clientId
-        if(id_token_payload.aud != this.clientId) {
-            console.log("Step 2 fail");
-            return false;
-        }
+        if(id_token_payload.aud != this.clientId) return false;
+
 
         // Step 3 : ensure the timestamp has not elapsed
-        if(id_token_payload.exp < Date.now() / 1000) {
-            console.log("Step 3 fail");
-            return false;
-        }
+        if(id_token_payload.exp < Date.now() / 1000) return false;
 
         var request = {
             url: OAuthClient.jwks_uri,
@@ -492,32 +500,30 @@ OAuthClient.prototype.validateIdToken = function(params) {
     }.bind(this));
 }
 
+/**
+ *
+ * @param id_token
+ * @param kid
+ * @param request
+ * @returns {Promise<AuthResponse>}
+ */
 OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
-
-    console.log("Step getKeyFromJWKsURI pass");
 
     return (new Promise(function(resolve) {
 
-        resolve(this.loadResponsegFromJWKsURI(request));
+        resolve(this.loadResponseFromJWKsURI(request));
 
     }.bind(this))).then(function(response) {
 
-        console.log('The response  are :'+ JSON.stringify(response));
-        if(response.status != "200") {
-            console.log('The true   are :');
-            throw new Error('Invalid response from JWKsURI');
-        }
+        if(response.status != "200") throw new Error('Invalid response from JWKsURI');
 
         var key = JSON.parse(response.body).keys[0];
-
-        console.log('The keys are :' + JSON.stringify(JSON.parse(response.body)));
-        //
         var cert = this.getPublicKey(key['n'], key['e'])
+
         // Validate the RSA encryption
         return require("jsonwebtoken").verify(id_token, cert);
 
     }.bind(this)).catch(function(e) {
-
 
         e = this.createError(e);
         this.emit(this.events.requestError, e);
@@ -527,9 +533,12 @@ OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
 
 }
 
-
+/**
+ * get Public Key
+ * @param modulus
+ * @param exponent
+ */
 OAuthClient.prototype.getPublicKey = function(modulus, exponent) {
-    console.log("Step getPublicKey pass");
     var getPem = require('rsa-pem-from-mod-exp');
     var pem = getPem(modulus, exponent);
     return pem
@@ -549,8 +558,6 @@ OAuthClient.prototype.getTokenRequest = function(request) {
         resolve(this.loadResponse(request));
 
     }.bind(this))).then(function(response) {
-
-        console.log('The response is :'+JSON.stringify(response));
 
         authResponse.processResponse(response);
 
@@ -572,7 +579,7 @@ OAuthClient.prototype.getTokenRequest = function(request) {
 /**
  * Make HTTP Request using Popsicle Client
  * @param request
- * @returns {*}
+ * @returns response
  */
 OAuthClient.prototype.loadResponse = function (request) {
 
@@ -581,11 +588,14 @@ OAuthClient.prototype.loadResponse = function (request) {
     });
 };
 
-OAuthClient.prototype.loadResponsegFromJWKsURI = function (request) {
+/**
+ * Load response from JWK URI
+ * @param request
+ * @returns response
+ */
+OAuthClient.prototype.loadResponseFromJWKsURI = function (request) {
 
-    console.log("Step loadResponsegFromJWKsURI pass");
     return popsicle.get(request).then(function (response) {
-        console.log("response on popsicle"+JSON.stringify(response));
         return response;
     });
 };
@@ -620,7 +630,7 @@ OAuthClient.prototype.createError = function(e, authResponse) {
  * @returns {boolean}
  * @private
  */
-OAuthClient.prototype._isAccessTokenValid = function() {
+OAuthClient.prototype.isAccessTokenValid = function() {
     return (this.token.expires_in > Date.now());
 };
 
@@ -640,7 +650,6 @@ OAuthClient.prototype.authHeader = function() {
     var apiKey = this.clientId + ':' + this.clientSecret;
     return (typeof btoa == 'function') ? btoa(apiKey) : new Buffer(apiKey).toString('base64');
 };
-
 
 
 module.exports = OAuthClient;
