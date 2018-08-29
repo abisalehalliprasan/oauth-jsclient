@@ -49,7 +49,7 @@ Its very simple to use the Library. Follow below instructions to use the library
 <script type="text/javascript" src="path-to-scripts/oauth-jsclient/master/build/oauthclient.js"></script>
 <script type="text/javascript">
 
-    var oauthClient = new OAuth2Client({
+    var oauthClient = new OAuthClient({
         clientId: 'Enter your clientId',
         clientSecret: 'Enter your clientSecret',
         environment: OAuth2Client.environment.sandbox || OAuth2Client.environment.production,
@@ -70,10 +70,10 @@ along with its client secret to the oauth server in order to get the access toke
 
 ```javascript
 // Instance of client
-var oauthClient = new OAuth2Client({
+var oauthClient = new OAuthClient({
     clientId: 'Q0U5kTPRgklmWD0WS8x5L4JMv2IDC2nxXNJzdXdlQ8LDrmNhAi',
     clientSecret: 'flP1yvrvteJurDydgoImGvm9wOcifMureLe30L21',
-    environment: OAuth2Client.environment.sandbox,
+    environment: OAuthClient.environment.sandbox,
     redirectUri: 'http://localhost:8000/callback',
     cachePrefix: 'intuit-test'
 });

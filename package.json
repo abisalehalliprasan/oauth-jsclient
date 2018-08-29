@@ -2,7 +2,7 @@
   "name": "oauth-jsclient",
   "version": "0.0.1",
   "description": "Node.js client for OAuth2.0",
-  "main": "src/OAuth2CLient.js",
+  "main": "src/OAuthClient.js",
   "scripts": {
     "start": "node index.js"
   },

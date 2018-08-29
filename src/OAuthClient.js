@@ -1,6 +1,6 @@
 
 /**
- * @namespace OAuth2Client
+ * @namespace OAuthClient
  */
 
 var queryString = require('querystring');
@@ -22,7 +22,7 @@ var AuthResponse = require("./response/AuthResponse");
  * @param {string} config.appKey
  * @param {string} [config.cachePrefix]
  */
-function OAuth2Client(config) {
+function OAuthClient(config) {
 
     this.environment = config.environment;
     this.clientId = config.clientId;
@@ -52,16 +52,16 @@ function OAuth2Client(config) {
 }
 
 
-OAuth2Client.cacheId = 'cacheID';
-OAuth2Client.authorizeEndpoint = 'https://appcenter.intuit.com/connect/oauth2';
-OAuth2Client.tokenEndpoint = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
-OAuth2Client.revokeEndpoint = 'https://developer.api.intuit.com/v2/oauth2/tokens/revoke';
-OAuth2Client.userinfo_endpoint = 'https://accounts.platform.intuit.com/v1/openid_connect/userinfo';
-OAuth2Client.migrate_sandbox = 'https://developer-sandbox.api.intuit.com/v2/oauth2/tokens/migrate';
-OAuth2Client.migrate_production = 'https://developer.api.intuit.com/v2/oauth2/tokens/migrate';
-OAuth2Client.environment = {sandbox:'https://sandbox-quickbooks.api.intuit.com', production:'https://quickbooks.api.intuit.com'};
-OAuth2Client.jwks_uri = 'https://oauth.platform.intuit.com/op/v1/jwks';
-OAuth2Client.scopes = {
+OAuthClient.cacheId = 'cacheID';
+OAuthClient.authorizeEndpoint = 'https://appcenter.intuit.com/connect/oauth2';
+OAuthClient.tokenEndpoint = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer';
+OAuthClient.revokeEndpoint = 'https://developer.api.intuit.com/v2/oauth2/tokens/revoke';
+OAuthClient.userinfo_endpoint = 'https://accounts.platform.intuit.com/v1/openid_connect/userinfo';
+OAuthClient.migrate_sandbox = 'https://developer-sandbox.api.intuit.com/v2/oauth2/tokens/migrate';
+OAuthClient.migrate_production = 'https://developer.api.intuit.com/v2/oauth2/tokens/migrate';
+OAuthClient.environment = {sandbox:'https://sandbox-quickbooks.api.intuit.com/', production:'https://quickbooks.api.intuit.com/'};
+OAuthClient.jwks_uri = 'https://oauth.platform.intuit.com/op/v1/jwks';
+OAuthClient.scopes = {
     Accounting: 'com.intuit.quickbooks.accounting',
     Payment: 'com.intuit.quickbooks.payment',
     Profile: 'profile',
@@ -70,13 +70,13 @@ OAuth2Client.scopes = {
     Address: 'address',
     OpenId: 'openid'
 }
-OAuth2Client.user_agent = 'Intuit-OAuthClient-JS';
+OAuthClient.user_agent = 'Intuit-OAuthClient-JS';
 
 /**
  * Event Emitter
  * @type {EventEmitter}
  */
-OAuth2Client.prototype = Object.create(EventEmitter.prototype);
+OAuthClient.prototype = Object.create(EventEmitter.prototype);
 
 
 
@@ -85,11 +85,11 @@ OAuth2Client.prototype = Object.create(EventEmitter.prototype);
  * @param params
  * @returns {string} authorize Uri
  */
-OAuth2Client.prototype.authorizeUri = function(params) {
+OAuthClient.prototype.authorizeUri = function(params) {
 
     params = params || {};
 
-    return OAuth2Client.authorizeEndpoint + '?' + queryString.stringify({
+    return OAuthClient.authorizeEndpoint + '?' + queryString.stringify({
         'response_type': 'code',
         'redirect_uri': this.redirectUri ,
         'client_id': this.clientId,
@@ -104,7 +104,7 @@ OAuth2Client.prototype.authorizeUri = function(params) {
  * @param {string} uri
  * @returns {Object} Parse the callback URI
  */
-OAuth2Client.prototype.parseRedirectUri = function(uri) {
+OAuthClient.prototype.parseRedirectUri = function(uri) {
 
     var query = queryString.parse(uri.split('?').reverse()[0]);
     this.getToken().realmId = (query['realmId'] ? query['realmId'] : '');
@@ -117,7 +117,7 @@ OAuth2Client.prototype.parseRedirectUri = function(uri) {
  * @param options
  * @returns {Promise<any>}
  */
-OAuth2Client.prototype.createToken = function(params) {
+OAuthClient.prototype.createToken = function(params) {
 
     return (new Promise(function(resolve) {
 
@@ -132,14 +132,14 @@ OAuth2Client.prototype.createToken = function(params) {
         }
 
         var request = {
-            url: OAuth2Client.tokenEndpoint,
+            url: OAuthClient.tokenEndpoint,
             body: body,
             method: 'POST',
             headers: {
                 'Authorization': 'Basic ' + this.authHeader(),
                 'Content-Type': AuthResponse._urlencodedContentType,
                 'Accept': AuthResponse._jsonContentType,
-                'User-Agent': OAuth2Client.user_agent
+                'User-Agent': OAuthClient.user_agent
             }
         };
 
@@ -167,31 +167,30 @@ OAuth2Client.prototype.createToken = function(params) {
  * @param {Object} params.refresh_token (optional)
  * @returns {Promise<AuthResponse>}
  */
-OAuth2Client.prototype.refresh = function() {
+OAuthClient.prototype.refresh = function() {
 
     return (new Promise(function(resolve) {
 
         if(!this.token.refreshToken()) throw new Error('The Refresh token is missing');
         if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
 
-        params = params || {};
 
         this.emit(this.events.beforeRefresh);
 
         var body = {};
 
         body.grant_type = 'refresh_token';
-        body.refresh_token = params.refresh_token || this.getToken().refresh_token;
+        body.refresh_token = this.getToken().refresh_token;
 
         var request = {
-            url: OAuth2Client.tokenEndpoint,
+            url: OAuthClient.tokenEndpoint,
             body: body,
             method: 'POST',
             headers: {
                 'Authorization': 'Basic ' + this.authHeader(),
                 'Content-Type': AuthResponse._urlencodedContentType,
                 'Accept': AuthResponse._jsonContentType,
-                'User-Agent': OAuth2Client.user_agent
+                'User-Agent': OAuthClient.user_agent
             }
         };
 
@@ -220,7 +219,7 @@ OAuth2Client.prototype.refresh = function() {
  * @param {Object} params.refresh_token (optional)
  * @returns {Promise<AuthResponse>}
  */
-OAuth2Client.prototype.revoke = function(params) {
+OAuthClient.prototype.revoke = function(params) {
 
     return (new Promise(function(resolve) {
 
@@ -239,14 +238,14 @@ OAuth2Client.prototype.revoke = function(params) {
         body.token = params.access_token || params.refresh_token || (this.getToken().isAccessTokenValid() ? this.getToken().access_token : this.getToken().refresh_token);
 
         var request = {
-            url: OAuth2Client.revokeEndpoint,
+            url: OAuthClient.revokeEndpoint,
             body: body,
             method: 'POST',
             headers: {
                 'Authorization': 'Basic ' + this.authHeader(),
                 'Accept': AuthResponse._jsonContentType,
                 'Content-Type': AuthResponse._jsonContentType,
-                'User-Agent': OAuth2Client.user_agent
+                'User-Agent': OAuthClient.user_agent
             }
         };
 
@@ -271,7 +270,7 @@ OAuth2Client.prototype.revoke = function(params) {
  * @param {Object} params
  * @returns {Promise<AuthResponse>}
  */
-OAuth2Client.prototype.getUserInfo = function(params) {
+OAuthClient.prototype.getUserInfo = function(params) {
 
     return (new Promise(function(resolve) {
 
@@ -280,12 +279,12 @@ OAuth2Client.prototype.getUserInfo = function(params) {
         this.emit(this.events.beforeUserInfo);
 
         var request = {
-            url: OAuth2Client.userinfo_endpoint,
+            url: OAuthClient.userinfo_endpoint,
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + this.token.access_token,
                 'Accept': AuthResponse._jsonContentType,
-                'User-Agent': OAuth2Client.user_agent
+                'User-Agent': OAuthClient.user_agent
             }
         };
 
@@ -306,7 +305,7 @@ OAuth2Client.prototype.getUserInfo = function(params) {
 
 };
 
-OAuth2Client.prototype.makeApiCall = function(paramas)  {
+OAuthClient.prototype.makeApiCall = function(params)  {
 
     return (new Promise(function(resolve) {
 
@@ -314,7 +313,7 @@ OAuth2Client.prototype.makeApiCall = function(paramas)  {
 
         this.emit(this.events.beforeAPICall);
 
-        var url = this.environment.toLowerCase() == 'sandbox' ? OAuth2Client.migrate_sandbox : OAuth2Client.migrate_production;
+        var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.environment.sandbox : OAuthClient.environment.production;
 
         url += 'v3/company/'+ this.getToken().realmId +'/companyinfo/'+ this.getToken().realmId +'?minorversion=24';
 
@@ -322,22 +321,17 @@ OAuth2Client.prototype.makeApiCall = function(paramas)  {
             url: url,
             method: 'GET',
             headers: {
-                'Authorization': 'Bearer ' + this.token.access_token,
+                'Authorization': 'Bearer ' + this.getToken().access_token,
                 'Accept': AuthResponse._jsonContentType,
-                'User-Agent': OAuth2Client.user_agent
+                'User-Agent': OAuthClient.user_agent
             }
         };
 
-        resolve (this.getTokenRequest(request));
+        resolve(this.getTokenRequest(request));
 
+    }.bind(this))).then(function(authResponse) {
 
-
-    }.bind(this))).then(function(response) {
-
-        var authResponse = response.json ? response : null;
-        var json = authResponse && authResponse.getJson() || res;
-        this.token.setToken(json);
-        this.emit(this.events.refreshSuccess, authResponse);
+        this.emit(this.events.refreshSuccess);
         return authResponse;
 
     }.bind(this)).catch(function(e) {
@@ -350,7 +344,7 @@ OAuth2Client.prototype.makeApiCall = function(paramas)  {
 };
 
 
-OAuth2Client.prototype.migrate = function(params) {
+OAuthClient.prototype.migrate = function(params) {
 
     return (new Promise(function(resolve) {
 
@@ -358,7 +352,7 @@ OAuth2Client.prototype.migrate = function(params) {
 
         this.emit(this.events.beforeMigrate);
 
-        var url = this.environment.toLowerCase() == 'sandbox' ? OAuth2Client.migrate_sandbox : OAuth2Client.migrate_production;
+        var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.migrate_sandbox : OAuthClient.migrate_production;
 
         var authHeader = this.generateOauth1Sign(objectAssign({}, {method: 'POST', url: url}, params));
 
@@ -378,7 +372,7 @@ OAuth2Client.prototype.migrate = function(params) {
                 'Content-Type': 'application/json',
                 'Authorization': 'OAuth ' + authHeader,
                 'Accept': AuthResponse._jsonContentType,
-                'User-Agent': OAuth2Client.user_agent
+                'User-Agent': OAuthClient.user_agent
             }
         };
 
@@ -404,7 +398,7 @@ OAuth2Client.prototype.migrate = function(params) {
 };
 
 
-OAuth2Client.prototype.generateOauth1Sign = function(params) {
+OAuthClient.prototype.generateOauth1Sign = function(params) {
 
 
     var timestamp = Math.round(new Date().getTime()/1000);
@@ -438,7 +432,7 @@ OAuth2Client.prototype.generateOauth1Sign = function(params) {
 
 };
 
-OAuth2Client.prototype.validateIdToken = function(params) {
+OAuthClient.prototype.validateIdToken = function(params) {
 
     return (new Promise(function(resolve) {
 
@@ -476,11 +470,11 @@ OAuth2Client.prototype.validateIdToken = function(params) {
         }
 
         var request = {
-            url: OAuth2Client.jwks_uri,
+            url: OAuthClient.jwks_uri,
             method: 'GET',
             headers: {
                 'Accept': AuthResponse._jsonContentType,
-                'User-Agent': OAuth2Client.user_agent
+                'User-Agent': OAuthClient.user_agent
             }
         };
 
@@ -498,7 +492,7 @@ OAuth2Client.prototype.validateIdToken = function(params) {
     }.bind(this));
 }
 
-OAuth2Client.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
+OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
 
     console.log("Step getKeyFromJWKsURI pass");
 
@@ -534,7 +528,7 @@ OAuth2Client.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
 }
 
 
-OAuth2Client.prototype.getPublicKey = function(modulus, exponent) {
+OAuthClient.prototype.getPublicKey = function(modulus, exponent) {
     console.log("Step getPublicKey pass");
     var getPem = require('rsa-pem-from-mod-exp');
     var pem = getPem(modulus, exponent);
@@ -546,7 +540,7 @@ OAuth2Client.prototype.getPublicKey = function(modulus, exponent) {
  * @param {Object} request
  * @returns {Promise<AuthResponse>}
  */
-OAuth2Client.prototype.getTokenRequest = function(request) {
+OAuthClient.prototype.getTokenRequest = function(request) {
 
     var authResponse = new AuthResponse({token:this.token});
 
@@ -555,6 +549,8 @@ OAuth2Client.prototype.getTokenRequest = function(request) {
         resolve(this.loadResponse(request));
 
     }.bind(this))).then(function(response) {
+
+        console.log('The response is :'+JSON.stringify(response));
 
         authResponse.processResponse(response);
 
@@ -578,14 +574,14 @@ OAuth2Client.prototype.getTokenRequest = function(request) {
  * @param request
  * @returns {*}
  */
-OAuth2Client.prototype.loadResponse = function (request) {
+OAuthClient.prototype.loadResponse = function (request) {
 
     return popsicle.get(request).then(function (response) {
         return response;
     });
 };
 
-OAuth2Client.prototype.loadResponsegFromJWKsURI = function (request) {
+OAuthClient.prototype.loadResponsegFromJWKsURI = function (request) {
 
     console.log("Step loadResponsegFromJWKsURI pass");
     return popsicle.get(request).then(function (response) {
@@ -600,7 +596,7 @@ OAuth2Client.prototype.loadResponsegFromJWKsURI = function (request) {
  * @param {AuthResponse} authResponse
  * @return {Error|IApiError}
  */
-OAuth2Client.prototype.createError = function(e, authResponse) {
+OAuthClient.prototype.createError = function(e, authResponse) {
 
     if(!authResponse){
 
@@ -624,7 +620,7 @@ OAuth2Client.prototype.createError = function(e, authResponse) {
  * @returns {boolean}
  * @private
  */
-OAuth2Client.prototype._isAccessTokenValid = function() {
+OAuthClient.prototype._isAccessTokenValid = function() {
     return (this.token.expires_in > Date.now());
 };
 
@@ -632,7 +628,7 @@ OAuth2Client.prototype._isAccessTokenValid = function() {
  * GetToken
  * @returns {Token}
  */
-OAuth2Client.prototype.getToken = function() {
+OAuthClient.prototype.getToken = function() {
     return this.token;
 };
 
@@ -640,11 +636,11 @@ OAuth2Client.prototype.getToken = function() {
  * Get AuthHeader
  * @returns {string} authHeader
  */
-OAuth2Client.prototype.authHeader = function() {
+OAuthClient.prototype.authHeader = function() {
     var apiKey = this.clientId + ':' + this.clientSecret;
     return (typeof btoa == 'function') ? btoa(apiKey) : new Buffer(apiKey).toString('base64');
 };
 
 
 
-module.exports = OAuth2Client;
+module.exports = OAuthClient;

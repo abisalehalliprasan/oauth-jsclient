@@ -14,6 +14,7 @@
 function Token(params) {
 
     params = params || {};
+
     this.realmId = params.realmId || '';
     this.token_type = params.token_type || '';
     this.access_token = params.access_token || '';
@@ -97,9 +98,9 @@ Token.prototype.isAccessTokenValid = function() {
  * Check if there is a valid (not expired) access token
  * @return {boolean}
  */
-Token.prototype.isRefreshTokenValid = function(params) {
+Token.prototype.isRefreshTokenValid = function() {
 
-    return ((this.params.refresh_token ? params.refresh_token : this.getToken().refresh_token) > Date.now());
+    return (this.x_refresh_token_expires_in - this.latency > Date.now());
 
 };
 
