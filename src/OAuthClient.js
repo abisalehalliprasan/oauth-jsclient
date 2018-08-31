@@ -3,7 +3,7 @@
  * @namespace OAuthClient
  */
 
-var queryString = require('querystring');
+var queryString = require('query-string');
 var Tokens = require('csrf');
 var csrf = new Tokens();
 var atob = require('atob');

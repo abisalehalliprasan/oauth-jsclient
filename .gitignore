@@ -3,6 +3,8 @@
 .DS_Store
 .idea
 .idea/
+.nyc_output
+coverage/
 bower_components
 npm-debug.*
 node_modules
