@@ -8,7 +8,6 @@ var Tokens = require('csrf');
 var csrf = new Tokens();
 var atob = require('atob');
 var popsicle = require('popsicle');
-var EventEmitter = require("events").EventEmitter;
 var oauthSignature = require('oauth-signature');
 var Token = require("./access-token/Token");
 var AuthResponse = require("./response/AuthResponse");
@@ -29,25 +28,6 @@ function OAuthClient(config) {
     this.clientSecret = config.clientSecret;
     this.redirectUri = config.redirectUri;
     this.token = new Token(config);
-
-
-    EventEmitter.call(this);
-
-    this.events = {
-        migrateSuccess: 'migrateSuccess',
-        beforeMigrate: 'beforeMigrate',
-        beforeUserInfo: 'beforeUserInfo',
-        userInfoSuccess: 'userInfoSuccess',
-        beforeLogin: 'beforeLogin',
-        loginSuccess: 'loginSuccess',
-        loginError: 'loginError',
-        beforeRefresh: 'beforeRefresh',
-        refreshSuccess: 'refreshSuccess',
-        refreshError: 'refreshError',
-        beforeLogout: 'beforeLogout',
-        logoutSuccess: 'logoutSuccess',
-        logoutError: 'logoutError'
-    };
 
 }
 
@@ -72,13 +52,6 @@ OAuthClient.scopes = {
 }
 OAuthClient.user_agent = 'Intuit-OAuthClient-JS';
 
-/**
- * Event Emitter
- * @type {EventEmitter}
- */
-OAuthClient.prototype = Object.create(EventEmitter.prototype);
-
-
 
 /**
  * Redirect  User to Authorization Page
@@ -88,6 +61,9 @@ OAuthClient.prototype = Object.create(EventEmitter.prototype);
 OAuthClient.prototype.authorizeUri = function(params) {
 
     params = params || {};
+
+    // check if the scopes is provided
+    if(!params.scope) throw new Error('Provide the scopes');
 
     return OAuthClient.authorizeEndpoint + '?' + queryString.stringify({
         'response_type': 'code',
@@ -106,6 +82,7 @@ OAuthClient.prototype.authorizeUri = function(params) {
  */
 OAuthClient.prototype.parseRedirectUri = function(uri) {
 
+    // console.log('The prse is :'+uri);
     var query = queryString.parse(uri.split('?').reverse()[0]);
     this.getToken().realmId = (query['realmId'] ? query['realmId'] : '');
     return query;
@@ -117,12 +94,14 @@ OAuthClient.prototype.parseRedirectUri = function(uri) {
  * @param options
  * @returns {Promise<any>}
  */
-OAuthClient.prototype.createToken = function(params) {
+OAuthClient.prototype.createToken = function(uri) {
 
     return (new Promise(function(resolve) {
 
-        params = params || {};
-        this.emit(this.events.beforeLogin);
+        if(!uri) throw new Error('Provide the Uri');
+        var params = queryString.parse(uri.split('?').reverse()[0]);
+        this.getToken().realmId = (params['realmId'] ? params['realmId'] : '');
+
         var body = {};
         if (params.code) {
 
@@ -150,12 +129,10 @@ OAuthClient.prototype.createToken = function(params) {
         var authResponse = res.json ? res : null;
         var json = authResponse && authResponse.getJson() || res;
         this.token.setToken(json);
-        this.emit(this.events.loginSuccess, authResponse);
         return authResponse;
 
     }.bind(this)).catch(function(e) {
 
-        this.emit(this.events.loginError, e);
         throw e;
 
     }.bind(this));
@@ -174,8 +151,6 @@ OAuthClient.prototype.refresh = function() {
         if(!this.token.refreshToken()) throw new Error('The Refresh token is missing');
         if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
 
-
-        this.emit(this.events.beforeRefresh);
 
         var body = {};
 
@@ -201,7 +176,6 @@ OAuthClient.prototype.refresh = function() {
         var authResponse = res.json ? res : null;
         var json = authResponse && authResponse.getJson() || res;
         this.token.setToken(json);
-        this.emit(this.events.refreshSuccess, authResponse);
         return authResponse;
 
     }.bind(this)).catch(function(e) {
@@ -228,10 +202,8 @@ OAuthClient.prototype.revoke = function(params) {
         /**
          * Check if the tokens exist and are valid
          */
-        if(!this.token.refresh_token()) throw new Error('The Refresh token is missing');
+        if(!this.token.refreshToken()) throw new Error('The Refresh token is missing');
         if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
-
-        this.emit(this.events.beforeLogout);
 
         var body = {};
 
@@ -258,7 +230,6 @@ OAuthClient.prototype.revoke = function(params) {
 
     }.bind(this)).catch(function(e) {
 
-        this.emit(this.events.logoutError, e);
         throw e;
 
     }.bind(this));
@@ -276,8 +247,6 @@ OAuthClient.prototype.getUserInfo = function(params) {
 
         params = params || {};
 
-        this.emit(this.events.beforeUserInfo);
-
         var request = {
             url: OAuthClient.userinfo_endpoint,
             method: 'GET',
@@ -293,12 +262,10 @@ OAuthClient.prototype.getUserInfo = function(params) {
     }.bind(this))).then(function(res) {
 
         var authResponse = res.json ? res : null;
-        this.emit(this.events.userInfoSuccess, res);
         return authResponse;
 
     }.bind(this)).catch(function(e) {
 
-        this.emit(this.events.logoutError, e);
         throw e;
 
     }.bind(this));
@@ -316,7 +283,6 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
         params = params || {};
 
-        this.emit(this.events.beforeAPICall);
 
         var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.environment.sandbox : OAuthClient.environment.production;
 
@@ -336,7 +302,6 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
     }.bind(this))).then(function(authResponse) {
 
-        this.emit(this.events.refreshSuccess);
         return authResponse;
 
     }.bind(this)).catch(function(e) {
@@ -358,8 +323,6 @@ OAuthClient.prototype.migrate = function(params) {
     return (new Promise(function(resolve) {
 
         params = params || {};
-
-        this.emit(this.events.beforeMigrate);
 
         var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.migrate_sandbox : OAuthClient.migrate_production;
 
@@ -392,11 +355,9 @@ OAuthClient.prototype.migrate = function(params) {
         var authResponse = res.json ? res : null;
         var json = authResponse && authResponse.getJson() || res;
         this.token.setToken(json);
-        this.emit(this.events.migrateSuccess, authResponse);
         return authResponse;
     }.bind(this)).catch(function(e) {
 
-        this.emit(this.events.logoutError, e);
         throw e;
 
     }.bind(this));
@@ -494,7 +455,6 @@ OAuthClient.prototype.validateIdToken = function(params) {
 
     }.bind(this)).catch(function(e) {
 
-        this.emit(this.events.logoutError, e);
         throw e;
 
     }.bind(this));
@@ -526,7 +486,6 @@ OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
     }.bind(this)).catch(function(e) {
 
         e = this.createError(e);
-        this.emit(this.events.requestError, e);
         throw e;
 
     }.bind(this));
@@ -568,7 +527,6 @@ OAuthClient.prototype.getTokenRequest = function(request) {
     }.bind(this)).catch(function(e) {
 
         if (!e.authResponse) e = this.createError(e, authResponse);
-        this.emit(this.events.requestError, e);
         throw e;
 
     }.bind(this));
@@ -583,9 +541,14 @@ OAuthClient.prototype.getTokenRequest = function(request) {
  */
 OAuthClient.prototype.loadResponse = function (request) {
 
+    // console.log('The request is :'+JSON.stringify(request));
     return popsicle.get(request).then(function (response) {
+        // console.log('The response is :'+JSON.stringify(response));
         return response;
+    }).catch(function(e){
+        console.error('The error is '+ e);
     });
+
 };
 
 /**
