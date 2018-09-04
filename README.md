@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/abisalehalliprasan/oauth-jsclient.svg?branch=master)](https://travis-ci.com/abisalehalliprasan/oauth-jsclient)
+[![Coverage Status](https://coveralls.io/repos/github/abisalehalliprasan/oauth-jsclient/badge.svg?branch=master)](https://coveralls.io/github/abisalehalliprasan/oauth-jsclient?branch=master)
+
+
 # Intuit OAuth2.0 Client Library 
 
 
