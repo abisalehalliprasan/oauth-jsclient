@@ -79,6 +79,8 @@
     "events": "^3.0.0",
     "wreck": "^14.0.2",
     "chai": "^4.1.2",
+    "chance": "^1.0.13",
+    "chance-access-token": "^1.0.1",
     "popsicle": "^9.1.0",
     "query-string": "^5.0.1",
     "es6-promise": "^4.0.5",
