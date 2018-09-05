@@ -34,7 +34,7 @@ AuthResponse.prototype.processResponse = function(response) {
 /**
  * @return {AuthResponse}
  */
-AuthResponse.prototype.getToken = function(response) {
+AuthResponse.prototype.getToken = function() {
     return this.token.getToken();
 };
 
@@ -45,7 +45,6 @@ AuthResponse.prototype.getToken = function(response) {
  */
 AuthResponse.prototype.text = function() {
     return this.body;
-    // return this._response.body;
 };
 
 /**

@@ -1,13 +1,12 @@
 'use strict';
 
-const qs = require('query-string');
 const nock = require('nock');
 const { expect } = require('chai');
 
 const OAuthClientTest = require('../src/OAuthClient');
 const AuthResponse = require('../src/response/AuthResponse');
 const expectedAccessToken = require('./mocks/bearer-token.json');
-const expectedAuthResponse = require("./mocks/authresponse.json");
+const expectedTokenResponse = require("./mocks/tokenResponse.json");
 const expectedUserInfo = require("./mocks/userInfo.json");
 const expectedMakeAPICall = require("./mocks/makeAPICallResponse.json");
 
@@ -23,35 +22,13 @@ const oauthClient = new OAuthClientTest({
 describe('Tests for OAuthClient', () => {
     let scope;
     let result;
-    //
     before(() => {
-        const scopeOptions = {
-            reqheaders: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-        };
-
-        const expectedRequestParams = {
-            code: 'code',
-            redirect_uri: 'http://callback.com',
-            grant_type: 'authorization_code',
-            client_id: 'the client id',
-            client_secret: 'the client secret',
-        };
-
         scope = nock('http://intuit.org').persist()
             .post('/oauth2/v1/tokens/bearer')
             .reply(200, expectedAccessToken);
     });
 
-
     before(async () => {
-
-        var callback = 'http://localhost:8000/callback?state=test-state&code=test-code';
-        var parseRedirect = oauthClient.parseRedirectUri(callback);
-
-
         var  body = {};
         result = await oauthClient.loadResponse({
             url: 'http://intuit.org/oauth2/v1/tokens/bearer',
@@ -64,14 +41,10 @@ describe('Tests for OAuthClient', () => {
                 'User-Agent': oauthClient.user_agent
             }
         });
-
     });
 
     it('Creates a new access token instance', () => {
-        // const accessTokenResponse = chance.accessToken();
-
         const accessToken = oauthClient.getToken();
-
         expect(accessToken).to.have.property('realmId');
         expect(accessToken).to.have.property('token_type');
         expect(accessToken).to.have.property('refresh_token');
@@ -96,7 +69,6 @@ describe('Tests for OAuthClient', () => {
             } catch (e) {
                 expect(e.message).to.equal('Provide the scopes');
             }
-
         });
         it('When Scope is passed as an array', () => {
             var actualAuthUri = oauthClient.authorizeUri({scope:[OAuthClientTest.scopes.Accounting,OAuthClientTest.scopes.Payment,OAuthClientTest.scopes.OpenId],state:'testState'});
@@ -112,7 +84,7 @@ describe('Tests for OAuthClient', () => {
 
             scope = nock('https://oauth.platform.intuit.com').persist()
                 .post('/oauth2/v1/tokens/bearer')
-                .reply(200, expectedAuthResponse, {
+                .reply(200, expectedTokenResponse, {
                     "content-type":"application/json",
                     "content-length":"1636",
                     "connection":"close",
@@ -124,7 +96,6 @@ describe('Tests for OAuthClient', () => {
         });
 
         it('Provide the uri to get the tokens', () => {
-
             var parseRedirect = 'http://localhost:8000/callback?state=testState&code=Q011535008931rqveFweqmueq0GlOHhLPAFMp3NI2KJm5gbMMx';
             return oauthClient.createToken(parseRedirect)
                 .then(function(authResponse) {
@@ -133,7 +104,6 @@ describe('Tests for OAuthClient', () => {
         });
 
         it('When NO uri is provided', () => {
-
             return oauthClient.createToken()
                 .then(function(authResponse) {
                     expect(authResponse.getToken().access_token).to.be.equal(expectedAccessToken.access_token);
@@ -146,9 +116,7 @@ describe('Tests for OAuthClient', () => {
 
     // Refresh bearer tokens
     describe('Refresh Bearer Token', () => {
-
         before(() => {
-
             var refreshAccessToken = require("./mocks/refreshResponse.json");
             scope = nock('https://oauth.platform.intuit.com').persist()
                 .post('/oauth2/v1/tokens/bearer')
@@ -171,7 +139,6 @@ describe('Tests for OAuthClient', () => {
         });
 
         it('Refresh : refresh token is missing', () => {
-
             oauthClient.getToken().refresh_token = null;
             return oauthClient.refresh()
                 .catch(function(e) {
@@ -180,7 +147,6 @@ describe('Tests for OAuthClient', () => {
         });
 
         it('Refresh : refresh token is invalid', () => {
-
             oauthClient.getToken().refresh_token = 'sample_refresh_token';
             oauthClient.getToken().x_refresh_token_expires_in = '300';
             return oauthClient.refresh()
@@ -192,7 +158,6 @@ describe('Tests for OAuthClient', () => {
 
     // Revoke bearer tokens
     describe('Revoke Bearer Token', () => {
-
         before(() => {
             scope = nock('https://developer.api.intuit.com').persist()
                 .post('/v2/oauth2/tokens/revoke')
@@ -216,7 +181,6 @@ describe('Tests for OAuthClient', () => {
         });
 
         it('Revoke : refresh token is missing', () => {
-
             oauthClient.getToken().refresh_token = null;
             return oauthClient.revoke()
                 .catch(function(e) {
@@ -225,7 +189,6 @@ describe('Tests for OAuthClient', () => {
         });
 
         it('Revoke : refresh token is invalid', () => {
-
             oauthClient.getToken().refresh_token = 'sample_refresh_token';
             oauthClient.getToken().x_refresh_token_expires_in = '300';
             return oauthClient.revoke()
@@ -237,7 +200,6 @@ describe('Tests for OAuthClient', () => {
 
     // Get User Info ( OpenID )
     describe('Get User Info ( OpenID )', () => {
-
         before(() => {
             scope = nock('https://accounts.platform.intuit.com').persist()
                 .get('/v1/openid_connect/userinfo')
@@ -262,9 +224,7 @@ describe('Tests for OAuthClient', () => {
 
     // make API Call
     describe('Make API Call ', () => {
-
         describe('', () => {
-
             before(() => {
                 scope = nock('https://sandbox-quickbooks.api.intuit.com').persist()
                     .get('/v3/company/12345/companyinfo/12345')
@@ -278,7 +238,6 @@ describe('Tests for OAuthClient', () => {
                         "pragma":"no-cache"
                     });
             });
-
             it('Make API Call in Sanbox Environment', () => {
                 oauthClient.getToken().realmId = '12345';
                 return oauthClient.makeApiCall()
@@ -286,11 +245,9 @@ describe('Tests for OAuthClient', () => {
                         expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedMakeAPICall));
                     });
             });
-
         });
 
         describe('', () => {
-
             before(() => {
                 scope = nock('https://quickbooks.api.intuit.com').persist()
                     .get('/v3/company/12345/companyinfo/12345')
@@ -304,7 +261,6 @@ describe('Tests for OAuthClient', () => {
                         "pragma":"no-cache"
                     });
             });
-
             it('Make API Call in Production Environment', () => {
                 oauthClient.environment = 'production';
                 oauthClient.getToken().realmId = '12345';
@@ -314,9 +270,47 @@ describe('Tests for OAuthClient', () => {
                     });
             });
         });
-
     });
 
+    // Check Access Token Validity
+    describe('Check Access-Token Validity', () => {
+        it('access-token is valid', () => {
+            var validity = oauthClient.isAccessTokenValid();
+            expect(validity).to.be.true;
+        });
+        it('access-token is not valid', () => {
+            oauthClient.getToken().expires_in = null;
+            var validity = oauthClient.isAccessTokenValid();
+            expect(validity).to.be.false;
+        });
+    });
+
+    // Get Token
+    describe('Get Token', () => {
+        it('get token instance', () => {
+            var token = oauthClient.getToken();
+            expect(token).to.be.a('Object');
+        });
+        it('accesstoken is not valid', () => {
+            oauthClient.getToken().expires_in = null;
+            var validity = oauthClient.isAccessTokenValid();
+            expect(validity).to.be.false;
+        });
+    });
+
+    // Get Auth Header
+    describe('Get Auth Header', () => {
+        it('Auth Header is valid', () => {
+            var authHeader = oauthClient.authHeader();
+            console.log('The auth header is :'+authHeader);
+            expect(authHeader).to.be.equal('Y2xpZW50SUQ6Y2xpZW50U2VjcmV0');
+        });
+        it('accesstoken is not valid', () => {
+            oauthClient.getToken().expires_in = null;
+            var validity = oauthClient.isAccessTokenValid();
+            expect(validity).to.be.false;
+        });
+    });
 });
 
 
