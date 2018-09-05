@@ -9,6 +9,9 @@ const expectedAccessToken = require('./mocks/bearer-token.json');
 const expectedTokenResponse = require("./mocks/tokenResponse.json");
 const expectedUserInfo = require("./mocks/userInfo.json");
 const expectedMakeAPICall = require("./mocks/makeAPICallResponse.json");
+const expectedjwkResponseCall = require("./mocks/jwkResponse.json");
+const expectedvalidateIdToken = require("./mocks/validateIdToken.json");
+const expectedOpenIDToken = require('./mocks/openID-token.json');
 
 
 const oauthClient = new OAuthClientTest({
@@ -272,6 +275,59 @@ describe('Tests for OAuthClient', () => {
         });
     });
 
+    // make API Call
+    describe('Validate Id Token ', () => {
+        describe('', () => {
+            before(() => {
+                scope = nock('https://oauth.platform.intuit.com').persist()
+                    .get('/op/v1/jwks')
+                    .reply(200, expectedjwkResponseCall , {
+                        "content-type":"application/json;charset=UTF-8",
+                        "content-length":"264",
+                        "connection":"close",
+                        "server":"nginx",
+                        "strict-transport-security":"max-age=15552000",
+                        "intuit_tid":"1234-1234-1234-123",
+                        "cache-control":"no-cache, no-store",
+                        "pragma":"no-cache"
+                    });
+            });
+
+            it('Validate Id Token', () => {
+                oauthClient.getToken().setToken(expectedOpenIDToken);
+                oauthClient.validateIdToken()
+                    .then(function(response) {
+                        expect(response).to.be.equal(expectedvalidateIdToken);
+                    });
+            });
+
+        });
+
+        // describe('', () => {
+        //     before(() => {
+        //         scope = nock('https://quickbooks.api.intuit.com').persist()
+        //             .get('/v3/company/12345/companyinfo/12345')
+        //             .reply(200, expectedMakeAPICall , {
+        //                 "content-type":"application/json",
+        //                 "content-length":"1636",
+        //                 "connection":"close",
+        //                 "server":"nginx",
+        //                 "intuit_tid":"12345-123-1234-12345",
+        //                 "cache-control":"no-cache, no-store",
+        //                 "pragma":"no-cache"
+        //             });
+        //     });
+        //     it('Make API Call in Production Environment', () => {
+        //         oauthClient.environment = 'production';
+        //         oauthClient.getToken().realmId = '12345';
+        //         return oauthClient.makeApiCall()
+        //             .then(function(authResponse) {
+        //                 expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedMakeAPICall));
+        //             });
+        //     });
+        // });
+    });
+
     // Check Access Token Validity
     describe('Check Access-Token Validity', () => {
         it('access-token is valid', () => {
@@ -302,7 +358,6 @@ describe('Tests for OAuthClient', () => {
     describe('Get Auth Header', () => {
         it('Auth Header is valid', () => {
             var authHeader = oauthClient.authHeader();
-            console.log('The auth header is :'+authHeader);
             expect(authHeader).to.be.equal('Y2xpZW50SUQ6Y2xpZW50U2VjcmV0');
         });
         it('accesstoken is not valid', () => {
@@ -311,6 +366,8 @@ describe('Tests for OAuthClient', () => {
             expect(validity).to.be.false;
         });
     });
+
+
 });
 
 

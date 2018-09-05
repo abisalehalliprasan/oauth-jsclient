@@ -76,20 +76,6 @@ OAuthClient.prototype.authorizeUri = function(params) {
 
 
 /**
- * Parse the redirectURI
- * @param {string} uri
- * @returns {Object} Parse the callback URI
- */
-OAuthClient.prototype.parseRedirectUri = function(uri) {
-
-    // console.log('The prse is :'+uri);
-    var query = queryString.parse(uri.split('?').reverse()[0]);
-    this.getToken().realmId = (query['realmId'] ? query['realmId'] : '');
-    return query;
-};
-
-
-/**
  * Create Token { exchange code for bearer_token }
  * @param options
  * @returns {Promise<any>}
@@ -559,6 +545,7 @@ OAuthClient.prototype.loadResponse = function (request) {
 OAuthClient.prototype.loadResponseFromJWKsURI = function (request) {
 
     return popsicle.get(request).then(function (response) {
+        console.log("The response from JWKs URI is :"+JSON.stringify(response));
         return response;
     });
 };
