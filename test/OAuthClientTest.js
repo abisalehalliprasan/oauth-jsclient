@@ -1,20 +1,20 @@
 'use strict';
 
-const nock = require('nock');
-const { expect } = require('chai');
+var nock = require('nock');
+var { expect } = require('chai');
 
-const OAuthClientTest = require('../src/OAuthClient');
-const AuthResponse = require('../src/response/AuthResponse');
-const expectedAccessToken = require('./mocks/bearer-token.json');
-const expectedTokenResponse = require("./mocks/tokenResponse.json");
-const expectedUserInfo = require("./mocks/userInfo.json");
-const expectedMakeAPICall = require("./mocks/makeAPICallResponse.json");
-const expectedjwkResponseCall = require("./mocks/jwkResponse.json");
-const expectedvalidateIdToken = require("./mocks/validateIdToken.json");
-const expectedOpenIDToken = require('./mocks/openID-token.json');
+var OAuthClientTest = require('../src/OAuthClient');
+var AuthResponse = require('../src/response/AuthResponse');
+var expectedAccessToken = require('./mocks/bearer-token.json');
+var expectedTokenResponse = require("./mocks/tokenResponse.json");
+var expectedUserInfo = require("./mocks/userInfo.json");
+var expectedMakeAPICall = require("./mocks/makeAPICallResponse.json");
+var expectedjwkResponseCall = require("./mocks/jwkResponse.json");
+var expectedvalidateIdToken = require("./mocks/validateIdToken.json");
+var expectedOpenIDToken = require('./mocks/openID-token.json');
 
 
-const oauthClient = new OAuthClientTest({
+var oauthClient = new OAuthClientTest({
     clientId: 'clientID',
     clientSecret: 'clientSecret',
     environment: 'sandbox',
@@ -23,31 +23,10 @@ const oauthClient = new OAuthClientTest({
 
 
 describe('Tests for OAuthClient', () => {
-    let scope;
-    let result;
-    before(() => {
-        scope = nock('http://intuit.org').persist()
-            .post('/oauth2/v1/tokens/bearer')
-            .reply(200, expectedAccessToken);
-    });
-
-    before(async () => {
-        var  body = {};
-        result = await oauthClient.loadResponse({
-            url: 'http://intuit.org/oauth2/v1/tokens/bearer',
-            body: body,
-            method: 'POST',
-            headers: {
-                'Authorization': 'Basic ' + oauthClient.authHeader(),
-                'Content-Type': AuthResponse._urlencodedContentType,
-                'Accept': AuthResponse._jsonContentType,
-                'User-Agent': oauthClient.user_agent
-            }
-        });
-    });
+    var scope;
 
     it('Creates a new access token instance', () => {
-        const accessToken = oauthClient.getToken();
+        var accessToken = oauthClient.getToken();
         expect(accessToken).to.have.property('realmId');
         expect(accessToken).to.have.property('token_type');
         expect(accessToken).to.have.property('refresh_token');
@@ -67,7 +46,7 @@ describe('Tests for OAuthClient', () => {
 
         it('When NO Scope is passed', () => {
             try {
-               oauthClient.authorizeUri();
+                oauthClient.authorizeUri();
 
             } catch (e) {
                 expect(e.message).to.equal('Provide the scopes');
@@ -81,9 +60,9 @@ describe('Tests for OAuthClient', () => {
     });
 
     // Create bearer tokens
-    describe('Create Bearer Token', () => {
+    describe('Create Bearer Token', function() {
 
-        before(() => {
+        before(function() {
 
             scope = nock('https://oauth.platform.intuit.com').persist()
                 .post('/oauth2/v1/tokens/bearer')
@@ -98,7 +77,7 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('Provide the uri to get the tokens', () => {
+        it('Provide the uri to get the tokens', function() {
             var parseRedirect = 'http://localhost:8000/callback?state=testState&code=Q011535008931rqveFweqmueq0GlOHhLPAFMp3NI2KJm5gbMMx';
             return oauthClient.createToken(parseRedirect)
                 .then(function(authResponse) {
@@ -106,7 +85,7 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('When NO uri is provided', () => {
+        it('When NO uri is provided', function() {
             return oauthClient.createToken()
                 .then(function(authResponse) {
                     expect(authResponse.getToken().access_token).to.be.equal(expectedAccessToken.access_token);
@@ -118,8 +97,8 @@ describe('Tests for OAuthClient', () => {
     });
 
     // Refresh bearer tokens
-    describe('Refresh Bearer Token', () => {
-        before(() => {
+    describe('Refresh Bearer Token', function() {
+        before(function() {
             var refreshAccessToken = require("./mocks/refreshResponse.json");
             scope = nock('https://oauth.platform.intuit.com').persist()
                 .post('/oauth2/v1/tokens/bearer')
@@ -134,14 +113,14 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('Refresh the existing tokens', () => {
+        it('Refresh the existing tokens', function() {
             return oauthClient.refresh()
                 .then(function(authResponse) {
                     expect(authResponse.getToken().refresh_token).to.be.equal(expectedAccessToken.refresh_token);
                 });
         });
 
-        it('Refresh : refresh token is missing', () => {
+        it('Refresh : refresh token is missing', function(){
             oauthClient.getToken().refresh_token = null;
             return oauthClient.refresh()
                 .catch(function(e) {
@@ -149,7 +128,7 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('Refresh : refresh token is invalid', () => {
+        it('Refresh : refresh token is invalid', function(){
             oauthClient.getToken().refresh_token = 'sample_refresh_token';
             oauthClient.getToken().x_refresh_token_expires_in = '300';
             return oauthClient.refresh()
@@ -160,8 +139,8 @@ describe('Tests for OAuthClient', () => {
     });
 
     // Revoke bearer tokens
-    describe('Revoke Bearer Token', () => {
-        before(() => {
+    describe('Revoke Bearer Token', function(){
+        before(function()  {
             scope = nock('https://developer.api.intuit.com').persist()
                 .post('/v2/oauth2/tokens/revoke')
                 .reply(200, '' , {
@@ -175,7 +154,7 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('Revoke the existing tokens', () => {
+        it('Revoke the existing tokens', function()  {
             oauthClient.getToken().x_refresh_token_expires_in = '4535995551112';
             return oauthClient.revoke()
                 .then(function(authResponse) {
@@ -183,7 +162,7 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('Revoke : refresh token is missing', () => {
+        it('Revoke : refresh token is missing', function()  {
             oauthClient.getToken().refresh_token = null;
             return oauthClient.revoke()
                 .catch(function(e) {
@@ -191,7 +170,7 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('Revoke : refresh token is invalid', () => {
+        it('Revoke : refresh token is invalid', function()  {
             oauthClient.getToken().refresh_token = 'sample_refresh_token';
             oauthClient.getToken().x_refresh_token_expires_in = '300';
             return oauthClient.revoke()
@@ -202,8 +181,8 @@ describe('Tests for OAuthClient', () => {
     });
 
     // Get User Info ( OpenID )
-    describe('Get User Info ( OpenID )', () => {
-        before(() => {
+    describe('Get User Info ( OpenID )', function()  {
+        before(function()  {
             scope = nock('https://accounts.platform.intuit.com').persist()
                 .get('/v1/openid_connect/userinfo')
                 .reply(200, expectedUserInfo , {
@@ -217,7 +196,7 @@ describe('Tests for OAuthClient', () => {
                 });
         });
 
-        it('Get User Info', () => {
+        it('Get User Info', function()  {
             return oauthClient.getUserInfo()
                 .then(function(authResponse) {
                     expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedUserInfo));
@@ -226,9 +205,9 @@ describe('Tests for OAuthClient', () => {
     });
 
     // make API Call
-    describe('Make API Call ', () => {
-        describe('', () => {
-            before(() => {
+    describe('Make API Call ', function()  {
+        describe('', function()  {
+            before(function()  {
                 scope = nock('https://sandbox-quickbooks.api.intuit.com').persist()
                     .get('/v3/company/12345/companyinfo/12345')
                     .reply(200, expectedMakeAPICall , {
@@ -241,7 +220,7 @@ describe('Tests for OAuthClient', () => {
                         "pragma":"no-cache"
                     });
             });
-            it('Make API Call in Sanbox Environment', () => {
+            it('Make API Call in Sanbox Environment', function()  {
                 oauthClient.getToken().realmId = '12345';
                 return oauthClient.makeApiCall()
                     .then(function(authResponse) {
@@ -250,8 +229,8 @@ describe('Tests for OAuthClient', () => {
             });
         });
 
-        describe('', () => {
-            before(() => {
+        describe('', function()  {
+            before(function()  {
                 scope = nock('https://quickbooks.api.intuit.com').persist()
                     .get('/v3/company/12345/companyinfo/12345')
                     .reply(200, expectedMakeAPICall , {
@@ -276,9 +255,9 @@ describe('Tests for OAuthClient', () => {
     });
 
     // make API Call
-    describe('Validate Id Token ', () => {
-        describe('', () => {
-            before(() => {
+    describe('Validate Id Token ', function()  {
+        describe('', function()  {
+            before(function()  {
                 scope = nock('https://oauth.platform.intuit.com').persist()
                     .get('/op/v1/jwks')
                     .reply(200, expectedjwkResponseCall , {
@@ -293,7 +272,7 @@ describe('Tests for OAuthClient', () => {
                     });
             });
 
-            it('Validate Id Token', () => {
+            it('Validate Id Token', function()  {
                 oauthClient.getToken().setToken(expectedOpenIDToken);
                 oauthClient.validateIdToken()
                     .then(function(response) {
@@ -302,39 +281,15 @@ describe('Tests for OAuthClient', () => {
             });
 
         });
-
-        // describe('', () => {
-        //     before(() => {
-        //         scope = nock('https://quickbooks.api.intuit.com').persist()
-        //             .get('/v3/company/12345/companyinfo/12345')
-        //             .reply(200, expectedMakeAPICall , {
-        //                 "content-type":"application/json",
-        //                 "content-length":"1636",
-        //                 "connection":"close",
-        //                 "server":"nginx",
-        //                 "intuit_tid":"12345-123-1234-12345",
-        //                 "cache-control":"no-cache, no-store",
-        //                 "pragma":"no-cache"
-        //             });
-        //     });
-        //     it('Make API Call in Production Environment', () => {
-        //         oauthClient.environment = 'production';
-        //         oauthClient.getToken().realmId = '12345';
-        //         return oauthClient.makeApiCall()
-        //             .then(function(authResponse) {
-        //                 expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedMakeAPICall));
-        //             });
-        //     });
-        // });
     });
 
     // Check Access Token Validity
-    describe('Check Access-Token Validity', () => {
-        it('access-token is valid', () => {
+    describe('Check Access-Token Validity', function()  {
+        it('access-token is valid', function()  {
             var validity = oauthClient.isAccessTokenValid();
             expect(validity).to.be.true;
         });
-        it('access-token is not valid', () => {
+        it('access-token is not valid', function()  {
             oauthClient.getToken().expires_in = null;
             var validity = oauthClient.isAccessTokenValid();
             expect(validity).to.be.false;
@@ -342,12 +297,12 @@ describe('Tests for OAuthClient', () => {
     });
 
     // Get Token
-    describe('Get Token', () => {
-        it('get token instance', () => {
+    describe('Get Token', function()  {
+        it('get token instance', function()  {
             var token = oauthClient.getToken();
             expect(token).to.be.a('Object');
         });
-        it('accesstoken is not valid', () => {
+        it('accesstoken is not valid', function()  {
             oauthClient.getToken().expires_in = null;
             var validity = oauthClient.isAccessTokenValid();
             expect(validity).to.be.false;
@@ -355,12 +310,12 @@ describe('Tests for OAuthClient', () => {
     });
 
     // Get Auth Header
-    describe('Get Auth Header', () => {
-        it('Auth Header is valid', () => {
+    describe('Get Auth Header', function()  {
+        it('Auth Header is valid', function()  {
             var authHeader = oauthClient.authHeader();
             expect(authHeader).to.be.equal('Y2xpZW50SUQ6Y2xpZW50U2VjcmV0');
         });
-        it('accesstoken is not valid', () => {
+        it('accesstoken is not valid', function()  {
             oauthClient.getToken().expires_in = null;
             var validity = oauthClient.isAccessTokenValid();
             expect(validity).to.be.false;
@@ -369,5 +324,3 @@ describe('Tests for OAuthClient', () => {
 
 
 });
-
-
