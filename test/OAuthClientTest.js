@@ -2,8 +2,6 @@
 
 const qs = require('query-string');
 const nock = require('nock');
-const Chance = require('chance');
-const accessTokenMixin = require('chance-access-token');
 const { expect } = require('chai');
 
 const OAuthClientTest = require('../src/OAuthClient');
@@ -11,6 +9,7 @@ const AuthResponse = require('../src/response/AuthResponse');
 const expectedAccessToken = require('./mocks/bearer-token.json');
 const expectedAuthResponse = require("./mocks/authresponse.json");
 const expectedUserInfo = require("./mocks/userInfo.json");
+const expectedMakeAPICall = require("./mocks/makeAPICallResponse.json");
 
 
 const oauthClient = new OAuthClientTest({
@@ -259,6 +258,63 @@ describe('Tests for OAuthClient', () => {
                     expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedUserInfo));
                 });
         });
+    });
+
+    // make API Call
+    describe('Make API Call ', () => {
+
+        describe('', () => {
+
+            before(() => {
+                scope = nock('https://sandbox-quickbooks.api.intuit.com').persist()
+                    .get('/v3/company/12345/companyinfo/12345')
+                    .reply(200, expectedMakeAPICall , {
+                        "content-type":"application/json",
+                        "content-length":"1636",
+                        "connection":"close",
+                        "server":"nginx",
+                        "intuit_tid":"12345-123-1234-12345",
+                        "cache-control":"no-cache, no-store",
+                        "pragma":"no-cache"
+                    });
+            });
+
+            it('Make API Call in Sanbox Environment', () => {
+                oauthClient.getToken().realmId = '12345';
+                return oauthClient.makeApiCall()
+                    .then(function(authResponse) {
+                        expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedMakeAPICall));
+                    });
+            });
+
+        });
+
+        describe('', () => {
+
+            before(() => {
+                scope = nock('https://quickbooks.api.intuit.com').persist()
+                    .get('/v3/company/12345/companyinfo/12345')
+                    .reply(200, expectedMakeAPICall , {
+                        "content-type":"application/json",
+                        "content-length":"1636",
+                        "connection":"close",
+                        "server":"nginx",
+                        "intuit_tid":"12345-123-1234-12345",
+                        "cache-control":"no-cache, no-store",
+                        "pragma":"no-cache"
+                    });
+            });
+
+            it('Make API Call in Production Environment', () => {
+                oauthClient.environment = 'production';
+                oauthClient.getToken().realmId = '12345';
+                return oauthClient.makeApiCall()
+                    .then(function(authResponse) {
+                        expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedMakeAPICall));
+                    });
+            });
+        });
+
     });
 
 });

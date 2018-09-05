@@ -286,7 +286,7 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
         var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.environment.sandbox : OAuthClient.environment.production;
 
-        url += 'v3/company/'+ this.getToken().realmId +'/companyinfo/'+ this.getToken().realmId +'?minorversion=24';
+        url += 'v3/company/'+ this.getToken().realmId +'/companyinfo/'+ this.getToken().realmId;
 
         var request = {
             url: url,

@@ -72,9 +72,9 @@ app.get('/authUri', urlencodedParser, function(req,res) {
 app.get('/callback', function(req, res) {
 
 
-    var parseRedirect = oauthClient.parseRedirectUri(req.url);
+    // var parseRedirect = oauthClient.parseRedirectUri(req.url);
 
-    oauthClient.createToken(parseRedirect)
+    oauthClient.createToken(req.url)
        .then(function(authResponse) {
              oauth2_token_json = JSON.stringify(authResponse.getJson(), null,2);
          })
@@ -120,6 +120,7 @@ app.get('/getCompanyInfo', function(req,res){
 
     oauthClient.makeApiCall()
         .then(function(authResponse){
+            console.log("The response for API call is :"+JSON.stringify(authResponse));
             res.send(JSON.parse(authResponse.text()));
         })
         .catch(function(e) {
