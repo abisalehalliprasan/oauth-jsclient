@@ -2,14 +2,46 @@
 [![Coverage Status](https://coveralls.io/repos/github/abisalehalliprasan/oauth-jsclient/badge.svg?branch=master)](https://coveralls.io/github/abisalehalliprasan/oauth-jsclient?branch=master)
 
 
-# Intuit OAuth2.0 Client Library 
+# Intuit OAuth2.0 NodeJS Library 
 
+This client library is meant to work with Intuit's [OAuth2.0](https://tools.ietf.org/html/rfc674s9) and [OpenID Connect](https://developer.intuit.com/app/developer/qbo/docs/develop/authentication-and-authorization/openid-connect) implementations which conforms to the specifications.
+
+In order for an app to access data in a QuickBooks Online company, it must implement the [OAuth 2.0 protocol](https://tools.ietf.org/html/rfc6749) for authorization.  
+   
+This document explains how web server apps use Intuit OAuth 2.0 endpoints to implement the OAuth 2.0 [Authorization Workflow](https://developer.intuit.com/app/developer/qbo/docs/develop/authentication-and-authorization/oauth-2.0).
+
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+  - [Using NodeJS](#using-nodejs)
+- [Usage](#usage)
+  - [Authorization Code flow](#authorization-code-flow)
+- [Sample](#sample)  
+- [Helpers](#helpers)
+  - [Is Access Token valid](#is-accesstoken-valid)
+  - [Refresh Access_Token](#refresh-access_token)
+  - [Revoke Access Token](#revoke-access_token)
+  - [Getter / Setter for Token](#getter-/-setter-for-token )
+  - [Auth Response](#auth-response)
+  - [Error Logging](#error-logging)
+- [Contributing](#contributing)
+- [Authors](#authors)
+  - [Contributors](#contributors)
+- [Changelog](#changelog)
+- [License](#license)
+
+
+# Requirements
+
+The node client library is tested against the Node versions 7, 8, 9 .
 
 # Installation
 
 Its very simple to use the Library. Follow below instructions to use the library in the below environments:
 
-## If you are using NodeJS
+## Using NodeJS
 
 1. Install the NPM package:
 
@@ -22,13 +54,13 @@ Its very simple to use the Library. Follow below instructions to use the library
     ```js
     var OAuthClient = require('intuit-jsclient');
     var oauthClient = new OAuthClient({
-        clientId: 'Enter your clientId',
-        clientSecret: 'Enter your clientSecret',
+        clientId: '<Enter your clientId>',
+        clientSecret: '<Enter your clientSecret>',
         environment: 'sandbox' || 'production',
-        redirectUri: 'Enter your callback URL'
+        redirectUri: '<Enter your callback URL>'
     });
     ```
-    ** `redirectUri` would look like: http://localhost:8000/callback 
+    ** `redirectUri` would look like: `http://localhost:8000/callback`
 
 ***
 
@@ -36,7 +68,7 @@ Its very simple to use the Library. Follow below instructions to use the library
 
 We assume that you have a basic understanding about OAuth2.0. If not please read [API Documentation](https://developer.intuit.com/app/developer/qbo/docs/develop/authentication-and-authorization/oauth-2.0) for clear understanding
 
-## Authorize using Code Flow 
+## Authorization Code Flow 
 
 The Authorization Code flow is made up of two parts :  
  
@@ -44,12 +76,12 @@ At first your application asks the user the permission to access their data. If 
 
 In the second part, the client would exchange the `authorization code` along with its client secret to the oauth server in order to get the `access_token`. 
 
-Step 1. Redirect user to `oauthClient.authorizeUri(options)`.  
-Step 2. Parse response uri and get access-token using the function `oauthClient.createToken(req.url)` which returns a Promise.
+**Step 1.** Redirect user to `oauthClient.authorizeUri(options)`.  
+**Step 2.** Parse response uri and get access-token using the function `oauthClient.createToken(req.url)` which returns a Promise.
 
-** Note: This is how it would look like ( for example purposes )
-`options` = `{scope:[OAuthClient.scopes.Accounting,OAuthClient.scopes.OpenId],state:'testState'}` // pass the scopes and state is optional parameter  
-`req.url` = `http://localhost:8000/callback?state=testState&code=Q011536133983coxxxxxxxxxxxxxLNXB74IM09lF1UMmKmIh&realmId=sample_realmId` 
+** Note: This is how it would look like ( for example purposes )  
+`options` = `{scope:[OAuthClient.scopes.Accounting,OAuthClient.scopes.OpenId],state:'test_State'}` // pass the scopes and state is optional parameter  
+`req.url` = `http://localhost:8000/callback?state='test_state'&code='authCode'&realmId='realm_Id'` 
             
 
 ### Step 1
@@ -57,10 +89,10 @@ Step 2. Parse response uri and get access-token using the function `oauthClient.
 
 // Instance of client
 var oauthClient = new OAuthClient({
-    clientId: 'Enter your clientId',
-    clientSecret: 'Enter your clientSecret',
+    clientId: '<Enter your clientId>',
+    clientSecret: '<Enter your clientSecret>',
     environment: 'sandbox',
-    redirectUri: 'http://localhost:8000/callback'
+    redirectUri: '<http://localhost:8000/callback>'
 });
 
 // AuthorizationUri
@@ -95,8 +127,9 @@ oauthClient.createToken(parseRedirect)
 
 ```
 
+# Sample
 For more clarity, we suggest you take a look at the sample application below :  
-[sample - usage of intuit-jsclient library](https://github.intuit.com/abisalehalliprasan/oauth-jsclient/tree/master/sample)
+[sample](https://github.intuit.com/abisalehalliprasan/oauth-jsclient/tree/master/sample)
 
 
 ## Helpers
@@ -170,9 +203,9 @@ You can call the below methods to set and get the tokens using the `oauthClient`
 oauthClient.getToken().setToken({
     "token_type": "bearer",
     "expires_in": 3600,
-    "refresh_token":"enter_refresh_token",
+    "refresh_token":"<refresh_token>",
     "x_refresh_token_expires_in":15552000,
-    "access_token":"enter_access_token"
+    "access_token":"<access_token>"
 });
 
 // To get the tokens 
@@ -186,33 +219,101 @@ oauthClient.token.getToken();
 
 ### Auth-Response 
 
-The response provided by the client is a wrapped response of the below items :
+The response provided by the client is a wrapped response of the below items which is what we call authResponse, lets see how it looks like:
 
 ```text
 
-    1. response 
-    2. body 
-    3. json 
-    4. intuit_tid
+    1. response             // response from `HTTP Client` used by library
+    2. token                // instance of `Token` Object    
+    3. body                 // res.body in `text`  
+    4. json                 // res.body in `JSON`
+    5. intuit_tid           // `intuit-tid` from response headers
+
+```
+
+A sample `AuthResponse` object would look similar to :
+
+```json
+{  
+      "token":{  
+         "realmId":"<realmId>",
+         "token_type":"bearer",
+         "access_token":"<access_token>",
+         "refresh_token":"<refresh_token>",
+         "expires_in":3600,
+         "x_refresh_token_expires_in":8726400,
+         "id_token":"<id_token>",
+         "latency":60000
+      },
+      "response":{  
+         "url":"https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+         "headers":{  
+            "content-type":"application/json;charset=UTF-8",
+            "content-length":"61",
+            "connection":"close",
+            "server":"nginx",
+            "strict-transport-security":"max-age=15552000",
+            "intuit_tid":"1234-1234-1234-123",
+            "cache-control":"no-cache, no-store",
+            "pragma":"no-cache"
+         },
+         "body":"{\"id_token\":\"<id_token>\",\"expires_in\":3600,\"token_type\":\"bearer\",\"x_refresh_token_expires_in\":8726400,\"refresh_token\":\"<refresh_token>\",\"access_token\":\"<access_token>\"}",
+         "status":200,
+         "statusText":"OK"
+      },
+      "body":"{\"id_token\":\"<id_token>\",\"expires_in\":3600,\"token_type\":\"bearer\",\"x_refresh_token_expires_in\":8726400,\"refresh_token\":\"<refresh_token>\",\"access_token\":\"<access_token>\"}",
+      "json":{
+        "access_token": "<access_token>",
+        "refresh_token": "<refresh_token>",
+        "token_type": "bearer",
+        "expires_in": "3600",
+        "x_refresh_token_expires_in": "8726400",
+        "id_token": "<id_token>"
+      },
+      "intuit_tid":"4245c696-3710-1548-d1e0-d85918e22ebe"
+}
 
 ```
 You can use the below helper methods to make full use of the Auth Response Object :
 
+```javascript
+oauthClient.createToken(parseRedirect)
+    .then(function(authResponse) {
+        console.log('The Token in JSON is  '+ JSON.stringify(authResponse.getJson()));
+        var status = authResponse.status();
+        var body = authResponse.text();
+        var jsonResponse = authResponse.getJson();
+        var intuit_tid = authResponse.get_intuit_tid();
+    });
+
+```
+
+
+
 
 ### Error Logging
 
-Whenever there is an error, the library throws an exception and you can use the below helper methods to retreieve more informaiton :
+Whenever there is an error, the library throws an exception and you can use the below helper methods to retrieve more information :
 
 ```javascript
 
 oauthClient.createToken(parseRedirect)
-        .catch(function(e) {
-            console.log('The intuit from the error is :' + e.intuit_tid);
-            console.log('The error message is :' + e.error);
-            console.log('The error description is :' + e.error_description);
+        .catch(function(error) {
+            console.log(error);
         });
 
+
+/**
+* This is how the Error Object Looks : 
+{  
+   "originalMessage":"Response has an Error",
+   "error":"invalid_grant",
+   "error_description":"Token invalid",
+   "intuit_tid":"4245c696-3710-1548-d1e0-d85918e22ebe"
+}
+*/
 ```
+
 
 
 ## Contributing
@@ -221,7 +322,7 @@ TODO
 
 ## Authors
 
-TODO
+[AKBP](https://anilkumarbp.com/)
 
 ### Contributors
 
@@ -233,6 +334,7 @@ TODO
 TODO
 
 ## License
+
 
 Simple OAuth 2.0 is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
