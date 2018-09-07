@@ -4,11 +4,7 @@
 
 # Intuit OAuth2.0 NodeJS Library 
 
-This client library is meant to work with Intuit's [OAuth2.0](https://tools.ietf.org/html/rfc674s9) and [OpenID Connect](https://developer.intuit.com/app/developer/qbo/docs/develop/authentication-and-authorization/openid-connect) implementations which conforms to the specifications.
-
-In order for an app to access data in a QuickBooks Online company, it must implement the [OAuth 2.0 protocol](https://tools.ietf.org/html/rfc6749) for authorization.  
-   
-This document explains how web server apps use Intuit OAuth 2.0 endpoints to implement the OAuth 2.0 [Authorization Workflow](https://developer.intuit.com/app/developer/qbo/docs/develop/authentication-and-authorization/oauth-2.0).
+This client library is meant to work with Intuit's [OAuth2.0](https://developer.intuit.com/app/developer/qbo/docs/develop/authentication-and-authorization/oauth-2.0) and [OpenID Connect](https://developer.intuit.com/app/developer/qbo/docs/develop/authentication-and-authorization/openid-connect) implementations which conforms to the specifications.
 
 
 ## Table of Contents
@@ -35,7 +31,7 @@ This document explains how web server apps use Intuit OAuth 2.0 endpoints to imp
 
 # Requirements
 
-The node client library is tested against the Node versions 7, 8, 9 .
+The node client library is tested against the `Node`  >= `7.0.0`
 
 # Installation
 
@@ -70,19 +66,11 @@ We assume that you have a basic understanding about OAuth2.0. If not please read
 
 ## Authorization Code Flow 
 
-The Authorization Code flow is made up of two parts :  
+The Authorization Code flow is made up of two parts :   
  
-At first your application asks the user the permission to access their data. If the user approves the OAuth2 server sends an `authorization code` to the client.     
-
-In the second part, the client would exchange the `authorization code` along with its client secret to the oauth server in order to get the `access_token`. 
-
 **Step 1.** Redirect user to `oauthClient.authorizeUri(options)`.  
-**Step 2.** Parse response uri and get access-token using the function `oauthClient.createToken(req.url)` which returns a Promise.
+**Step 2.** Parse response uri and get access-token using the function `oauthClient.createToken(req.url)` which returns a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
-** Note: This is how it would look like ( for example purposes )  
-`options` = `{scope:[OAuthClient.scopes.Accounting,OAuthClient.scopes.OpenId],state:'test_State'}` // pass the scopes and state is optional parameter  
-`req.url` = `http://localhost:8000/callback?state='test_state'&code='authCode'&realmId='realm_Id'` 
-            
 
 ### Step 1
 ```javascript
@@ -314,7 +302,9 @@ oauthClient.createToken(parseRedirect)
 */
 ```
 
+## FAQ
 
+[FAQ](https://github.intuit.com/abisalehalliprasan/oauth-jsclient/wiki/FAQ)
 
 ## Contributing
 
@@ -322,7 +312,7 @@ TODO
 
 ## Authors
 
-[AKBP](https://anilkumarbp.com/)
+[AKBP](https://github.com/anilkumarbp)
 
 ### Contributors
 
