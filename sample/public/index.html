@@ -65,8 +65,6 @@
         <li><a href="https://developer.intuit.com/docs">Intuit API Developer Guide</a></li>
         <li><a href="https://developer.intuit.com/docs/00_quickbooks_online/2_build/50_sample_apps_and_code">Intuit Sample Apps and Code</a></li>
         <li><a href="https://developer.intuit.com/docs/00_quickbooks_online/2_build/40_sdks">Intuit Official SDK's</a></li>
-        <li><a href="https://github.com/anilkumarbp/intuit-demos-webhooks">Github Repo</a></li>
-        <li><a href="https://github.com/anilkumarbp/intuit-demos-webhooks/issues">Report Issues</a></li>
     </ul>
     <hr>
     <p class="text-center text-muted">
@@ -100,14 +98,13 @@
                         if (win.document.URL.indexOf("code") != -1) {
                             window.clearInterval(pollOAuth);
                             win.close();
-                            // location.reload();
+                            location.reload();
                         }
                     } catch (e) {
                         console.log(e)
                     }
                 }, 100);
             });
-
         }
 
         function retrieveToken() {

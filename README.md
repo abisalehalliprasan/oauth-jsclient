@@ -314,14 +314,6 @@ TODO
 
 [AKBP](https://github.com/anilkumarbp)
 
-### Contributors
-
-TODO
-
-
-## Changelog
-
-TODO
 
 ## License
 

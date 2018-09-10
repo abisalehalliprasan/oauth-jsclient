@@ -288,7 +288,6 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
         params = params || {};
 
-
         var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.environment.sandbox : OAuthClient.environment.production;
 
         url += 'v3/company/'+ this.getToken().realmId +'/companyinfo/'+ this.getToken().realmId;
@@ -332,7 +331,6 @@ OAuthClient.prototype.migrate = function(params) {
         var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.migrate_sandbox : OAuthClient.migrate_production;
 
         var authHeader = this.generateOauth1Sign(objectAssign({}, {method: 'POST', url: url}, params));
-
 
         var body = {
             'scope':(Array.isArray(params.scope)) ? params.scope.join(' ') : params.scope,
@@ -546,14 +544,9 @@ OAuthClient.prototype.getTokenRequest = function(request) {
  */
 OAuthClient.prototype.loadResponse = function (request) {
 
-    // console.log('The request is :'+JSON.stringify(request));
     return popsicle.get(request).then(function (response) {
-        // console.log('The response is :'+JSON.stringify(response));
         return response;
-    }).catch(function(e){
-        console.error('The error is '+ e);
     });
-
 };
 
 /**
@@ -564,7 +557,6 @@ OAuthClient.prototype.loadResponse = function (request) {
 OAuthClient.prototype.loadResponseFromJWKsURI = function (request) {
 
     return popsicle.get(request).then(function (response) {
-        console.log("The response from JWKs URI is :"+JSON.stringify(response));
         return response;
     });
 };

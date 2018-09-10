@@ -71,9 +71,6 @@ app.get('/authUri', urlencodedParser, function(req,res) {
  */
 app.get('/callback', function(req, res) {
 
-
-    // var parseRedirect = oauthClient.parseRedirectUri(req.url);
-
     oauthClient.createToken(req.url)
        .then(function(authResponse) {
              oauth2_token_json = JSON.stringify(authResponse.getJson(), null,2);
@@ -127,12 +124,6 @@ app.get('/getCompanyInfo', function(req,res){
             console.error(e);
         });
 });
-
-
-
-// app.listen(8000, function () {
-//     console.log('💻 Server listening on port http://localhost:');
-// });
 
 
 /**
