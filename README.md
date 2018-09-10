@@ -304,21 +304,24 @@ oauthClient.createToken(parseRedirect)
 
 ## FAQ
 
-[FAQ](https://github.intuit.com/abisalehalliprasan/oauth-jsclient/wiki/FAQ)
+You can refer to our [FAQ](https://github.intuit.com/abisalehalliprasan/oauth-jsclient/wiki/FAQ) if you have any questions.
 
 ## Contributing
 
-TODO
+* You are welcome to send a PR to `develop` branch.
+* The `master` branch will always point to the latest published version.
+* The `develop` branch will contain the latest development/testing changes.
 
-## Authors
+### Steps
 
-[AKBP](https://github.com/anilkumarbp)
+* Fork and clone the repository (`develop` branch).
+* Run `npm install` for dependencies.
+* Run `npm test` to execute all specs.
 
 
 ## License
 
-
-Simple OAuth 2.0 is licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+Intuit `oauth-jsclient` is licensed under the [Apache License, Version 2.0](https://github.intuit.com/abisalehalliprasan/oauth-jsclient/blob/master/LICENSE)
 
 
 
