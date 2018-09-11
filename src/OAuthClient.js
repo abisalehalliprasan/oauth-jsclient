@@ -30,6 +30,7 @@ var popsicle = require('popsicle');
 var oauthSignature = require('oauth-signature');
 var Token = require("./access-token/Token");
 var AuthResponse = require("./response/AuthResponse");
+var objectAssign = require('object-assign');
 
 
 
@@ -328,9 +329,9 @@ OAuthClient.prototype.migrate = function(params) {
 
         params = params || {};
 
-        var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.migrate_sandbox : OAuthClient.migrate_production;
+        var uri = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.migrate_sandbox : OAuthClient.migrate_production;
 
-        var authHeader = this.generateOauth1Sign(objectAssign({}, {method: 'POST', url: url}, params));
+        var authHeader = this.generateOauth1Sign(objectAssign({}, {method: 'POST', uri: uri}, params));
 
         var body = {
             'scope':(Array.isArray(params.scope)) ? params.scope.join(' ') : params.scope,
@@ -340,7 +341,7 @@ OAuthClient.prototype.migrate = function(params) {
         };
 
         var request = {
-            url: url,
+            url: uri,
             method: 'POST',
             body: body,
             headers: {
@@ -521,6 +522,8 @@ OAuthClient.prototype.getTokenRequest = function(request) {
 
     }.bind(this))).then(function(response) {
 
+        // console.log('The response ois : '+ JSON.stringify(response));
+
         authResponse.processResponse(response);
 
         if (!authResponse.valid()) throw new Error('Response has an Error');
@@ -569,7 +572,7 @@ OAuthClient.prototype.loadResponseFromJWKsURI = function (request) {
  */
 OAuthClient.prototype.createError = function(e, authResponse) {
 
-    if(!authResponse){
+    if(!authResponse || authResponse.body == ""){
 
         e.error = e.originalMessage;
         e.error = e.originalMessage;

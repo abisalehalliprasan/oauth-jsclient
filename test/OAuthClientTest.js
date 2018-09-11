@@ -22,10 +22,10 @@ var oauthClient = new OAuthClientTest({
 });
 
 
-describe('Tests for OAuthClient', () => {
+describe('Tests for OAuthClient', function()  {
     var scope;
 
-    it('Creates a new access token instance', () => {
+    it('Creates a new access token instance', function()  {
         var accessToken = oauthClient.getToken();
         expect(accessToken).to.have.property('realmId');
         expect(accessToken).to.have.property('token_type');
@@ -37,14 +37,14 @@ describe('Tests for OAuthClient', () => {
     });
 
 
-    describe('Get the authorizationURI', () => {
-        it('When Scope is passed', () => {
+    describe('Get the authorizationURI', function() {
+        it('When Scope is passed', function() {
             var actualAuthUri = oauthClient.authorizeUri({scope:'testScope',state:'testState'});
             var expectedAuthUri = 'https://appcenter.intuit.com/connect/oauth2?client_id=clientID&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fcallback&response_type=code&scope=testScope&state=testState';
             expect(actualAuthUri).to.be.equal(expectedAuthUri);
         });
 
-        it('When NO Scope is passed', () => {
+        it('When NO Scope is passed', function() {
             try {
                 oauthClient.authorizeUri();
 
@@ -52,7 +52,7 @@ describe('Tests for OAuthClient', () => {
                 expect(e.message).to.equal('Provide the scopes');
             }
         });
-        it('When Scope is passed as an array', () => {
+        it('When Scope is passed as an array', function() {
             var actualAuthUri = oauthClient.authorizeUri({scope:[OAuthClientTest.scopes.Accounting,OAuthClientTest.scopes.Payment,OAuthClientTest.scopes.OpenId],state:'testState'});
             var expectedAuthUri = 'https://appcenter.intuit.com/connect/oauth2?client_id=clientID&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fcallback&response_type=code&scope=com.intuit.quickbooks.accounting%20com.intuit.quickbooks.payment%20openid&state=testState';
             expect(actualAuthUri).to.be.equal(expectedAuthUri);
@@ -243,7 +243,7 @@ describe('Tests for OAuthClient', () => {
                         "pragma":"no-cache"
                     });
             });
-            it('Make API Call in Production Environment', () => {
+            it('Make API Call in Production Environment', function() {
                 oauthClient.environment = 'production';
                 oauthClient.getToken().realmId = '12345';
                 return oauthClient.makeApiCall()

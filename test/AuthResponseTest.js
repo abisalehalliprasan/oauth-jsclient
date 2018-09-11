@@ -24,7 +24,7 @@ oauthClient.getToken().setToken(expectedAccessToken);
 var authResponse = new AuthResponse({token:oauthClient.getToken()});
 
 
-describe('Tests for AuthResponse', () => {
+describe('Tests for AuthResponse', function() {
     var scope;
     var result;
 
@@ -36,13 +36,13 @@ describe('Tests for AuthResponse', () => {
         expect(authResponse).to.have.property('intuit_tid');
     });
 
-    it('Process Response', () => {
+    it('Process Response', function() {
         authResponse.processResponse(expectedResponse);
         expect(authResponse.response).to.deep.equal(expectedResponse);
         expect(authResponse.intuit_tid).to.deep.equal(expectedResponse.headers.intuit_tid);
     });
 
-    it('Process Get Token', () => {
+    it('Process Get Token', function() {
         var token = authResponse.getToken();
         expect(token).to.have.property('token_type');
         expect(token).to.have.property('refresh_token');
