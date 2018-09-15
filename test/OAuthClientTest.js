@@ -2,6 +2,7 @@
 
 var nock = require('nock');
 var { expect } = require('chai');
+// var Response = require('Response');
 
 var OAuthClientTest = require('../src/OAuthClient');
 var AuthResponse = require('../src/response/AuthResponse');
@@ -12,6 +13,8 @@ var expectedMakeAPICall = require("./mocks/makeAPICallResponse.json");
 var expectedjwkResponseCall = require("./mocks/jwkResponse.json");
 var expectedvalidateIdToken = require("./mocks/validateIdToken.json");
 var expectedOpenIDToken = require('./mocks/openID-token.json');
+var expectedErrorResponse = require('./mocks/errorResponse.json');
+
 
 
 var oauthClient = new OAuthClientTest({
@@ -220,9 +223,9 @@ describe('Tests for OAuthClient', function()  {
                         "pragma":"no-cache"
                     });
             });
-            it('Make API Call in Sanbox Environment', function()  {
+            it('Make API Call in Sandbox Environment', function()  {
                 oauthClient.getToken().realmId = '12345';
-                return oauthClient.makeApiCall()
+                return oauthClient.makeApiCall({url:'https://sandbox-quickbooks.api.intuit.com/v3/company/'+'12345'+'/companyinfo/'+'12345'})
                     .then(function(authResponse) {
                         expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedMakeAPICall));
                     });
@@ -246,7 +249,7 @@ describe('Tests for OAuthClient', function()  {
             it('Make API Call in Production Environment', function() {
                 oauthClient.environment = 'production';
                 oauthClient.getToken().realmId = '12345';
-                return oauthClient.makeApiCall()
+                return oauthClient.makeApiCall({url:'https://quickbooks.api.intuit.com/v3/company/'+'12345'+'/companyinfo/'+'12345'})
                     .then(function(authResponse) {
                         expect(JSON.stringify(authResponse.getJson())).to.be.equal(JSON.stringify(expectedMakeAPICall));
                     });
@@ -322,5 +325,56 @@ describe('Tests for OAuthClient', function()  {
         });
     });
 
+    // Generate OAuth1Sign
+
+    describe('Generate OAuth1Sign', function()  {
+        it('Generate OAuth1Sign String', function()  {
+            var params = {
+                method: 'POST',
+                uri: 'uri',
+                oauth_consumer_key : 'qyprdFsHNQtdRupMKmYnDt6MOjWBW9',
+                oauth_consumer_secret : 'TOI5I5dK94dkqDy9SlRD7s08uQUvtow6CK53SpJ1',
+                oauth_signature_method : 'HMAC-SHA1',
+                oauth_timestamp : 'timestamp',
+                oauth_nonce : 'nonce',
+                oauth_version : '1.0',
+                access_token : 'qyprdlGm45UFPPhwAM59Awaq4BAd6hNFwp1SSkZDn54Zrgv9',
+                access_secret : 'xPZ44ZvT17H56pkAAqhfyjuZlF5zZb2k9ej3ohko'
+            }
+
+            var oauth1Sign = oauthClient.generateOauth1Sign(params);
+            expect(oauth1Sign).to.be.a('String');
+        });
+    });
+
+    // Generate Error Response
+
+    // describe('Generate OAuth1Sign', function()  {
+    //     it('Generate OAuth1Sign String', function()  {
+    //         var e = {};
+    //         var authResponse = new AuthResponse({token:expectedAccessToken});
+    //         var response = new Response({
+    //             "url": "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+    //             "headers": {
+    //                 "content-type": "application/json;charset=UTF-8",
+    //                 "content-length": "61",
+    //                 "connection": "close",
+    //                 "server": "nginx",
+    //                 "date": "Tue, 11 Sep 2018 07:52:23 GMT",
+    //                 "strict-transport-security": "max-age=15552000",
+    //                 "intuit_tid":"1234-1234-1234-123",
+    //                 "cache-control": "no-cache, no-store",
+    //                 "pragma": "no-cache"
+    //             },
+    //             "body": "{\"error_description\":\"Token invalid\",\"error\":\"invalid_grant\"}",
+    //             "status": 400,
+    //             "statusText": "Bad Request"
+    //         });
+    //         authResponse.processResponse(response);
+    //
+    //         var error = oauthClient.createError(e,authResponse);
+    //         expect(error.error).to.be.equal('invalid_grant');
+    //     });
+    // });
 
 });

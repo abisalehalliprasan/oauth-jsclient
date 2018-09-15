@@ -31,6 +31,8 @@ var oauthSignature = require('oauth-signature');
 var Token = require("./access-token/Token");
 var AuthResponse = require("./response/AuthResponse");
 var objectAssign = require('object-assign');
+var package = require('../package.json');
+var os = require('os');
 
 
 
@@ -70,7 +72,7 @@ OAuthClient.scopes = {
     Address: 'address',
     OpenId: 'openid'
 }
-OAuthClient.user_agent = 'Intuit-OAuthClient-JS';
+OAuthClient.user_agent = 'Intuit-OAuthClient-JS'+ package.version + os.type() + os.release() + os.platform();
 
 
 /**
@@ -139,6 +141,7 @@ OAuthClient.prototype.createToken = function(uri) {
 
     }.bind(this)).catch(function(e) {
 
+        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -154,9 +157,10 @@ OAuthClient.prototype.refresh = function() {
 
     return (new Promise(function(resolve) {
 
-        if(!this.token.refreshToken()) throw new Error('The Refresh token is missing');
-        if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
-
+        /**
+         * Check if the tokens exist and are valid
+         */
+        this.validateToken();
 
         var body = {};
 
@@ -208,8 +212,7 @@ OAuthClient.prototype.revoke = function(params) {
         /**
          * Check if the tokens exist and are valid
          */
-        if(!this.token.refreshToken()) throw new Error('The Refresh token is missing');
-        if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
+        this.validateToken();
 
         var body = {};
 
@@ -236,6 +239,7 @@ OAuthClient.prototype.revoke = function(params) {
 
     }.bind(this)).catch(function(e) {
 
+        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -272,6 +276,7 @@ OAuthClient.prototype.getUserInfo = function(params) {
 
     }.bind(this)).catch(function(e) {
 
+        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -289,12 +294,8 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
         params = params || {};
 
-        var url = this.environment.toLowerCase() == 'sandbox' ? OAuthClient.environment.sandbox : OAuthClient.environment.production;
-
-        url += 'v3/company/'+ this.getToken().realmId +'/companyinfo/'+ this.getToken().realmId;
-
         var request = {
-            url: url,
+            url: params.url,
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + this.getToken().access_token,
@@ -362,6 +363,7 @@ OAuthClient.prototype.migrate = function(params) {
         return authResponse;
     }.bind(this)).catch(function(e) {
 
+        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -459,6 +461,7 @@ OAuthClient.prototype.validateIdToken = function(params) {
 
     }.bind(this)).catch(function(e) {
 
+        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -479,7 +482,7 @@ OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
 
     }.bind(this))).then(function(response) {
 
-        if(response.status != "200") throw new Error('Invalid response from JWKsURI');
+        if(response.status != "200") throw new Error('Invalid id_token');
 
         var key = JSON.parse(response.body).keys[0];
         var cert = this.getPublicKey(key['n'], key['e'])
@@ -522,8 +525,6 @@ OAuthClient.prototype.getTokenRequest = function(request) {
 
     }.bind(this))).then(function(response) {
 
-        // console.log('The response ois : '+ JSON.stringify(response));
-
         authResponse.processResponse(response);
 
         if (!authResponse.valid()) throw new Error('Response has an Error');
@@ -537,6 +538,15 @@ OAuthClient.prototype.getTokenRequest = function(request) {
 
     }.bind(this));
 
+};
+
+/**
+ * Token Validation
+ */
+OAuthClient.prototype.validateToken = function() {
+
+    if(!this.token.refreshToken()) throw new Error('The Refresh token is missing');
+    if(!this.token.isRefreshTokenValid()) throw new Error('The Refresh token is invalid, please Authorize again.');
 };
 
 
@@ -574,7 +584,6 @@ OAuthClient.prototype.createError = function(e, authResponse) {
 
     if(!authResponse || authResponse.body == ""){
 
-        e.error = e.originalMessage;
         e.error = e.originalMessage;
         return e;
     }

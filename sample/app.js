@@ -115,7 +115,9 @@ app.get('/refreshAccessToken', function(req,res){
 app.get('/getCompanyInfo', function(req,res){
 
 
-    oauthClient.makeApiCall()
+    var companyID = oauthClient.getToken().realmId;
+
+    oauthClient.makeApiCall({url:'https://quickbooks.api.intuit.com/v3/company/'+companyID+'/companyinfo/'+companyID})
         .then(function(authResponse){
             console.log("The response for API call is :"+JSON.stringify(authResponse));
             res.send(JSON.parse(authResponse.text()));
