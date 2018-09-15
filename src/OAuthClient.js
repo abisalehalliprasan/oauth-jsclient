@@ -141,7 +141,6 @@ OAuthClient.prototype.createToken = function(uri) {
 
     }.bind(this)).catch(function(e) {
 
-        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -190,7 +189,6 @@ OAuthClient.prototype.refresh = function() {
 
     }.bind(this)).catch(function(e) {
 
-        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -239,7 +237,6 @@ OAuthClient.prototype.revoke = function(params) {
 
     }.bind(this)).catch(function(e) {
 
-        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -276,7 +273,6 @@ OAuthClient.prototype.getUserInfo = function(params) {
 
     }.bind(this)).catch(function(e) {
 
-        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -312,7 +308,6 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
     }.bind(this)).catch(function(e) {
 
-        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -363,7 +358,6 @@ OAuthClient.prototype.migrate = function(params) {
         return authResponse;
     }.bind(this)).catch(function(e) {
 
-        e = this.createError(e);
         throw e;
 
     }.bind(this));
@@ -461,7 +455,6 @@ OAuthClient.prototype.validateIdToken = function(params) {
 
     }.bind(this)).catch(function(e) {
 
-        e = this.createError(e);
         throw e;
 
     }.bind(this));
