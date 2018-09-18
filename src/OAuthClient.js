@@ -313,7 +313,7 @@ OAuthClient.prototype.getUserInfo = function(params) {
 };
 
 /**
- * Make API call : Get CompanyInfo API Call
+ * Make API call : Make API Call
  * @param params
  * @returns {Promise<any>}
  */
