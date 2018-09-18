@@ -21,18 +21,20 @@
  * @namespace OAuthClient
  */
 
-
-var queryString = require('query-string');
-var Tokens = require('csrf');
-var csrf = new Tokens();
 var atob = require('atob');
-var popsicle = require('popsicle');
-var oauthSignature = require('oauth-signature');
-var Token = require("./access-token/Token");
+var Tokens = require('csrf');
+var csrf = new Tokens()
 var AuthResponse = require("./response/AuthResponse");
+var oauthSignature = require('oauth-signature');
 var objectAssign = require('object-assign');
+var queryString = require('query-string');
+var popsicle = require('popsicle');
+var Token = require("./access-token/Token");
 var package = require('../package.json');
 var os = require('os');
+var winston = require('winston');
+var path = require('path');
+var fs = require('fs');
 
 
 
@@ -50,7 +52,26 @@ function OAuthClient(config) {
     this.clientSecret = config.clientSecret;
     this.redirectUri = config.redirectUri;
     this.token = new Token(config);
+    this.logging =  config.hasOwnProperty('logging') && config.logging == true ? true : false;
+    this.logger = null;
 
+    if(this.logging) {
+
+        var dir = './logs';
+        if (!fs.existsSync(dir)){
+            fs.mkdirSync(dir);
+        }
+        this.logger = winston.createLogger({
+            level: 'info',
+            format: winston.format.combine(
+                winston.format.timestamp(),
+                winston.format.printf(info => {
+                    return `${info.timestamp} ${info.level}: ${info.message}`;
+                })
+            ),
+            transports: [new winston.transports.File({filename: path.join(dir , 'oAuthClient-log.log')})]
+        });
+    }
 }
 
 
@@ -72,7 +93,7 @@ OAuthClient.scopes = {
     Address: 'address',
     OpenId: 'openid'
 }
-OAuthClient.user_agent = 'Intuit-OAuthClient-JS'+ package.version + os.type() + os.release() + os.platform();
+OAuthClient.user_agent = 'Intuit-OAuthClient-JS'+ '_' + package.version + '_' + os.type() + '_' + os.release() + '_' + os.platform();
 
 
 /**
@@ -87,13 +108,17 @@ OAuthClient.prototype.authorizeUri = function(params) {
     // check if the scopes is provided
     if(!params.scope) throw new Error('Provide the scopes');
 
-    return OAuthClient.authorizeEndpoint + '?' + queryString.stringify({
+    var authorizeUri = OAuthClient.authorizeEndpoint + '?' + queryString.stringify({
         'response_type': 'code',
         'redirect_uri': this.redirectUri ,
         'client_id': this.clientId,
         'scope': (Array.isArray(params.scope)) ? params.scope.join(' ') : params.scope,
         'state': params.state || csrf.create(csrf.secretSync())
     });
+
+    this.log('info','The Authorize Uri is :',authorizeUri);
+    return authorizeUri;1
+
 };
 
 
@@ -137,10 +162,12 @@ OAuthClient.prototype.createToken = function(uri) {
         var authResponse = res.json ? res : null;
         var json = authResponse && authResponse.getJson() || res;
         this.token.setToken(json);
+        this.log('info','Create Token response is : ',JSON.stringify(authResponse, null, 2));
         return authResponse;
 
     }.bind(this)).catch(function(e) {
 
+        this.log('error','Create Token () threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -185,10 +212,12 @@ OAuthClient.prototype.refresh = function() {
         var authResponse = res.json ? res : null;
         var json = authResponse && authResponse.getJson() || res;
         this.token.setToken(json);
+        this.log('info','Refresh Token () response is : ',JSON.stringify(authResponse, null, 2));
         return authResponse;
 
     }.bind(this)).catch(function(e) {
 
+        this.log('error','Refresh Token () threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -233,10 +262,12 @@ OAuthClient.prototype.revoke = function(params) {
 
     }.bind(this))).then(function(authResponse) {
 
+        this.log('info','Revoke Token () response is : ',JSON.stringify(authResponse, null, 2));
         return authResponse;
 
     }.bind(this)).catch(function(e) {
 
+        this.log('error','Revoke Token () threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -269,10 +300,12 @@ OAuthClient.prototype.getUserInfo = function(params) {
     }.bind(this))).then(function(res) {
 
         var authResponse = res.json ? res : null;
+        this.log('info','The Get User Info () response is : ',JSON.stringify(authResponse, null, 2));
         return authResponse;
 
     }.bind(this)).catch(function(e) {
 
+        this.log('error','Get User Info ()  threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -304,10 +337,12 @@ OAuthClient.prototype.makeApiCall = function(params)  {
 
     }.bind(this))).then(function(authResponse) {
 
+        this.log('info','The makeAPICall () response is : ',JSON.stringify(authResponse, null, 2));
         return authResponse;
 
     }.bind(this)).catch(function(e) {
 
+        this.log('error','Get makeAPICall ()  threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -355,9 +390,11 @@ OAuthClient.prototype.migrate = function(params) {
         var authResponse = res.json ? res : null;
         var json = authResponse && authResponse.getJson() || res;
         this.token.setToken(json);
+        this.log('info','The migrate () response is : ',JSON.stringify(authResponse, null, 2));
         return authResponse;
     }.bind(this)).catch(function(e) {
 
+        this.log('error','The migrate () threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -451,10 +488,12 @@ OAuthClient.prototype.validateIdToken = function(params) {
 
     }.bind(this))).then(function(res) {
 
+        this.log('info','The validateIdToken () response is : ',JSON.stringify(authResponse, null, 2));
         return res;
 
     }.bind(this)).catch(function(e) {
 
+        this.log('error','The validateIdToken () threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -486,6 +525,7 @@ OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
     }.bind(this)).catch(function(e) {
 
         e = this.createError(e);
+        this.log('error','The getKeyFromJWKsURI () threw an exception : ',JSON.stringify(e, null, 2));
         throw e;
 
     }.bind(this));
@@ -617,5 +657,10 @@ OAuthClient.prototype.authHeader = function() {
     return (typeof btoa == 'function') ? btoa(apiKey) : new Buffer(apiKey).toString('base64');
 };
 
+OAuthClient.prototype.log = function(level,message,messageData) {
+    if (this.logging) {
+        this.logger.log(level,message + messageData);
+    }
+};
 
 module.exports = OAuthClient;
