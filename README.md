@@ -15,9 +15,10 @@ This client library is meant to work with Intuit's [OAuth2.0](https://developer.
 - [Usage](#usage)
   - [Authorization Code flow](#authorization-code-flow)
 - [Sample](#sample)  
-- [Helpers](#helpers)
+- [Helpers](#helpers)  
   - [Is Access Token valid](#is-accesstoken-valid)
   - [Refresh Access_Token](#refresh-access_token)
+  - [Auto Refresh](#auto-refresh)
   - [Revoke Access Token](#revoke-access_token)
   - [Getter / Setter for Token](#getter-/-setter-for-token )
   - [Auth Response](#auth-response)
@@ -49,6 +50,7 @@ Its very simple to use the Library. Follow below instructions to use the library
 
     ```js
     var OAuthClient = require('intuit-jsclient');
+
     var oauthClient = new OAuthClient({
         clientId: '<Enter your clientId>',
         clientSecret: '<Enter your clientSecret>',
@@ -56,9 +58,18 @@ Its very simple to use the Library. Follow below instructions to use the library
         redirectUri: '<Enter your callback URL>'
     });
     ```
-    ** `redirectUri` would look like: `http://localhost:8000/callback`
 
-***
+###Options :
+
+* `clientId` - clientID for your app. Required
+* `clientSecret` - clientSecret fpor your app. Required
+* `environment` - environment for the client. Required
+    * `sandbox` - for authorizing in sandbox.
+    * `production` -  for authorizing in production.
+* `redirectUri` - redirectUri on your app to get the `authorizationCode` from Intuit Servers. Required    
+* `logging` - by default, logging is disabled i.e `false`. To enable provide`true`.
+
+ 
 
 # Usage
 
@@ -84,7 +95,7 @@ var oauthClient = new OAuthClient({
 });
 
 // AuthorizationUri
-var authUri = oauthClient.authorizeUri({scope:[OAuthClient.scopes.Accounting,OAuthClient.scopes.OpenId],state:'testState'});
+var authUri = oauthClient.authorizeUri({scope:[OAuthClient.scopes.Accounting,OAuthClient.scopes.OpenId],state:'testState'});  // can be an array of multiple scopes ex : {scope:[OAuthClient.scopes.Accounting,OAuthClient.scopes.OpenId]}
 
 
 // To redirect to the authorizeUri using the browser's window object
@@ -96,6 +107,22 @@ OR
 res.redirect(authUri);
 
 ```
+###Scopes :
+
+The available scopes include :
+
+* `com.intuit.quickbooks.accounting` - for accounting scope include `OAuthClient.scopes.Accounting`  
+* `com.intuit.quickbooks.payment` - for payment scope include `OAuthClient.scopes.Payment` 
+
+OpenID Scopes :
+
+* `openid` - for openID assertion include `OAuthClient.scopes.Openid`
+* `profile` - for profile assertion include `OAuthClient.scopes.Profile`  
+* `email` - for email assertion include `OAuthClient.scopes.Email`
+* `phone` - for phone assertion include `OAuthClient.scopes.Phone`
+* `address` - for address assertion include `OAuthClient.scopes.Address`
+
+
 
 ### Step 2
 ```javascript
@@ -163,6 +190,7 @@ Access tokens are valid for 3600 seconds (one hour), after which time you need t
             console.error(e.intuit_tid);
         });
 ```
+
 
 ### Revoke access_token
 
@@ -280,6 +308,20 @@ oauthClient.createToken(parseRedirect)
 
 
 ### Error Logging
+
+By default the logging is `disabled` i.e set to `false`. However, to enable logging, pass `logging=true` when you create the `oauthClient` instance :
+
+```javascript
+var oauthClient = new OAuthClient({
+    clientId: '<Enter your clientId>',
+    clientSecret: '<Enter your clientSecret>',
+    environment: 'sandbox',
+    redirectUri: '<http://localhost:8000/callback>',
+    logging: true
+});
+
+```
+The logs would be captured under the directory `/logs/oAuthClient-log.log`  
 
 Whenever there is an error, the library throws an exception and you can use the below helper methods to retrieve more information :
 
