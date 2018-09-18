@@ -13,3 +13,4 @@ src/index.js
 .sample/node_modules
 .sample/.env
 oauth-client.iml
+package-lock.json
