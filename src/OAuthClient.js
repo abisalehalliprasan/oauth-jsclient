@@ -490,7 +490,7 @@ OAuthClient.prototype.validateIdToken = function(params) {
     }.bind(this))).then(function(res) {
 
         this.log('info','The validateIdToken () response is : ',JSON.stringify(res, null, 2));
-        return res;
+        if(res) return  true;
 
     }.bind(this)).catch(function(e) {
 
@@ -511,7 +511,7 @@ OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
 
     return (new Promise(function(resolve) {
 
-        resolve(this.loadResponseFromJWKsURI(request));
+        resolve(this.loadResponse(request));
 
     }.bind(this))).then(function(response) {
 

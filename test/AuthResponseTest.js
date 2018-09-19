@@ -22,7 +22,7 @@ var oauthClient = new OAuthClientTest({
 
 oauthClient.getToken().setToken(expectedAccessToken);
 var authResponse = new AuthResponse({token:oauthClient.getToken()});
-
+authResponse.processResponse(expectedResponse);
 
 describe('Tests for AuthResponse', function() {
     var scope;
@@ -54,6 +54,11 @@ describe('Tests for AuthResponse', function() {
         var text = authResponse.text();
         expect(text).to.be.a('string');
         expect(text).to.be.equal('{"id_token":"sample_id_token","expires_in":3600,"token_type":"bearer","x_refresh_token_expires_in":8726400,"refresh_token":"sample_refresh_token","access_token":"sample_access_token"}');
+    });
+
+    it('Process Status of AuthResponse', function() {
+       var status = authResponse.status();
+        expect(status).to.be.equal(200);
     });
 });
 
