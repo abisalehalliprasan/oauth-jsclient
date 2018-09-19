@@ -22,10 +22,10 @@
       "sample/node_modules"
     ],
     "check-coverage": true,
-    "lines": 80,
-    "statements": 80,
-    "functions": 80,
-    "branches": 60,
+    "lines": 90,
+    "statements": 90,
+    "functions": 90,
+    "branches": 80,
     "reporter": [
       "lcov",
       "text-summary"
@@ -70,8 +70,9 @@
   "dependencies": {
     "atob": "^2.0.3",
     "csrf": "^3.0.4",
-    "es6-promise": "^4.0.5",
+    "es6-promise": "^4.2.5",
     "events": "^3.0.0",
+    "idtoken-verifier": "^1.2.0",
     "jsonwebtoken": "^7.1.9",
     "oauth-signature": "^1.3.1",
     "popsicle": "^9.1.0",

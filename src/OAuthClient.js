@@ -366,7 +366,7 @@ OAuthClient.prototype.migrate = function(params) {
 
         var body = {
             'scope':(Array.isArray(params.scope)) ? params.scope.join(' ') : params.scope,
-            'redirect_uri':this.redirect_uri,
+            'redirect_uri':this.redirectUri,
             'client_id': this.clientId,
             'client_secret': this.clientSecret
         };
@@ -413,7 +413,7 @@ OAuthClient.prototype.generateOauth1Sign = function(params) {
     var timestamp = Math.round(new Date().getTime()/1000);
 
     var parameters = {
-        oauth_consumer_key : params.consumer_key,
+        oauth_consumer_key : params.oauth_consumer_key,
         oauth_token : params.access_token,
         oauth_signature_method : 'HMAC-SHA1',
         oauth_timestamp : timestamp,
@@ -421,7 +421,8 @@ OAuthClient.prototype.generateOauth1Sign = function(params) {
         oauth_version : '1.0'
     };
 
-    var encodedSignature = oauthSignature.generate (params.method, params.uri, parameters, params.consumer_secret, params.access_secret);
+    var encodedSignature = oauthSignature.generate (params.method, params.uri, parameters, params.oauth_consumer_secret, params.access_secret);
+
     parameters ['oauth_signature'] = encodedSignature;
     var keys = Object.keys(parameters);
     var authHeader = '';
@@ -439,6 +440,7 @@ OAuthClient.prototype.generateOauth1Sign = function(params) {
             authHeader += key + '=' + '"'+parameters[key]+'",';
         }
     }
+
     return authHeader;
 
 };
@@ -463,8 +465,7 @@ OAuthClient.prototype.validateIdToken = function(params) {
         var id_token_header = JSON.parse(atob(token_parts[0]));
         var id_token_payload = JSON.parse(atob(token_parts[1]));
         var id_token_signature = atob(token_parts[2]);
-
-
+        //
         // Step 1 : First check if the issuer is as mentioned in "issuer"
         if(id_token_payload.iss != 'https://oauth.platform.intuit.com/op/v1') return false;
 
@@ -488,7 +489,7 @@ OAuthClient.prototype.validateIdToken = function(params) {
 
     }.bind(this))).then(function(res) {
 
-        this.log('info','The validateIdToken () response is : ',JSON.stringify(authResponse, null, 2));
+        this.log('info','The validateIdToken () response is : ',JSON.stringify(res, null, 2));
         return res;
 
     }.bind(this)).catch(function(e) {
@@ -514,12 +515,13 @@ OAuthClient.prototype.getKeyFromJWKsURI = function(id_token, kid, request) {
 
     }.bind(this))).then(function(response) {
 
-        if(response.status != "200") throw new Error('Invalid id_token');
+        if(response.status != "200") throw new Error('Could not reach JWK endpoint');
 
-        var key = JSON.parse(response.body).keys[0];
-        var cert = this.getPublicKey(key['n'], key['e'])
+        // Find the key by KID
+        var responseBody = JSON.parse(response.body);
+        var key = responseBody.keys.find(el => (el.kid == kid))
+        var cert = this.getPublicKey(key.n, key.e)
 
-        // Validate the RSA encryption
         return require("jsonwebtoken").verify(id_token, cert);
 
     }.bind(this)).catch(function(e) {
